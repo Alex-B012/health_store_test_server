@@ -2,8 +2,9 @@ import mongoose from "mongoose";
 
 const sellerSchema = new mongoose.Schema({
   name: {
-    type: String,
-    required: [true, "Seller name is required"],
+    name: { type: String, required: [true, "First name is required"] },
+    patronymic: { type: String, required: false },
+    surname: { type: String, required: [true, "Surname is required"] },
   },
   dob: {
     type: Date,

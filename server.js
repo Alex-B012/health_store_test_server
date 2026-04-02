@@ -19,11 +19,13 @@ import TelegramBot from "node-telegram-bot-api";
 import { checkChatId } from "./bot/bot.js";
 import scannerRouter from "./routes/scannerRoute.js";
 import connectDB from "./db_config/mongodb.js";
-// import {
-//   admins_populate,
-//   managers_populate,
-//   sellers_populate,
-// } from "./db_service/service.js";
+import {
+  admins_populate,
+  managers_populate,
+  sellers_populate,
+  products_populate,
+} from "./db_service/service.js";
+import managerRouter from "./routes/managerRoute.js";
 
 dotenv.config();
 
@@ -47,9 +49,15 @@ connectDB();
 // const isPopulateAdmins = false;
 // const isPopulateManagers = false;
 // const isPopulateSellers = false;
+// const isPopulateProducts = false;
 // if (isPopulateAdmins) admins_populate();
 // if (isPopulateManagers) managers_populate();
-// if (isPopulateSellers) sellers_populate();
+// if (isPopulateSellers) {
+//   sellers_populate();
+//   products_populate();
+//   products_populate();
+// }
+// if (isPopulateProducts) products_populate();
 
 app.use(express.json());
 
@@ -63,10 +71,11 @@ app.use(cors({}));
 
 // --- Middleware ---
 app.use(loggingMiddleware);
-app.use(tokenVerificationMiddleware(API_KEY));
+// app.use(tokenVerificationMiddleware(API_KEY));
 
 // --- Routes ---
 app.use("/api/scanner", scannerRouter);
+app.use("/api/manager", managerRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello! Server is running safely with ngrok.");

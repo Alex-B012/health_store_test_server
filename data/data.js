@@ -4,16 +4,26 @@ const warehouse_employees = [20001, 20002, 20003, 20004, 20005];
 const product_names = [
   "Инотекс",
   "Фенолайф",
-  "Раствор для инъекций",
+  "Цитикомед - Раствор для инъекций",
   "Андропрост Плюс",
   "Андросан",
   "Випонефрон",
   "Аминоприм",
+  "Тест товар 1",
+  "Тест товар 2",
+  "Тест товар 3",
+  "Тест товар 4",
+  "Тест товар 5",
+  "Тест товар 6",
+  "Тест товар 7",
+  "Тест товар 8",
+  "Тест товар 9",
+  "Тест товар 10",
 ];
 
 const sellers = [
   {
-    name: "Иван Сергеевич Петров",
+    name: { name: "Иван", patronymic: "Сергеевич", surname: "Петров" },
     dob: new Date("1990-04-12"),
     employmentPeriod: {
       status: "active",
@@ -24,7 +34,7 @@ const sellers = [
     telegram_id: 83472910,
   },
   {
-    name: "Анна Сергеевна Иванова",
+    name: { name: "Анна", patronymic: "Сергеевна", surname: "Иванова" },
     dob: new Date("1992-05-17"),
     employmentPeriod: {
       status: "active",
@@ -35,7 +45,7 @@ const sellers = [
     telegram_id: 67584930,
   },
   {
-    name: "Дмитрий Александрович Иванов",
+    name: { name: "Дмитрий", patronymic: "Александрович", surname: "Иванов" },
     dob: new Date("1985-09-23"),
     employmentPeriod: {
       status: "active",
@@ -46,7 +56,7 @@ const sellers = [
     telegram_id: 92837465,
   },
   {
-    name: "Сергей Николаевич Смирнов",
+    name: { name: "Сергей", patronymic: "Николаевич", surname: "Смирнов" },
     dob: new Date("1978-01-30"),
     employmentPeriod: {
       status: "active",
@@ -57,7 +67,7 @@ const sellers = [
     telegram_id: 56473829,
   },
   {
-    name: "Екатерина Дмитриевна Кузнецова",
+    name: { name: "Екатерина", patronymic: "Дмитриевна", surname: "Кузнецова" },
     dob: new Date("1988-10-09"),
     employmentPeriod: {
       status: "active",
@@ -68,7 +78,7 @@ const sellers = [
     telegram_id: 84736251,
   },
   {
-    name: "Алексей Дмитриевич Волков",
+    name: { name: "Алексей", patronymic: "Дмитриевич", surname: "Волков" },
     dob: new Date("1998-07-19"),
     employmentPeriod: {
       status: "active",
@@ -79,7 +89,7 @@ const sellers = [
     telegram_id: 19283746,
   },
   {
-    name: "Мария Павловна Соколова",
+    name: { name: "Мария", patronymic: "Павловна", surname: "Соколова" },
     dob: new Date("1995-02-25"),
     employmentPeriod: {
       status: "active",
