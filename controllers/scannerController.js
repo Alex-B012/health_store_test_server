@@ -39,11 +39,8 @@ const scanProduct = async (req, res) => {
 
     const productData = await createProductForTest();
 
-    // Save to database
     const newProduct = new productModel(productData);
     await newProduct.save();
-
-    console.log("Scanner data saved to database:", productData);
 
     console.log(
       "Scanner data saved to database (mocked) - logic to be implemented",

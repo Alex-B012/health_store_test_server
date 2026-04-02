@@ -1,13 +1,17 @@
 import productModel from "../models/productModel.js";
 import sellerModel from "../models/sellerModel.js";
+import { handleServerError } from "../utils/utils.js";
 
 // API to get all products for manager view
 const getAllProducts = async (req, res) => {
   console.log("getAllProducts - start");
 
   try {
-    const products = await productModel.find({}).select("-__v -stock_entry");
-    const sellers = await sellerModel.find({}).select("_id name");
+    const products = await productModel
+      .find({})
+      .select("-__v -stock_entry")
+      .lean();
+    const sellers = await sellerModel.find({}).select("_id name").lean();
 
     const sellerMap = {};
     sellers.forEach((s) => {
@@ -15,9 +19,9 @@ const getAllProducts = async (req, res) => {
     });
 
     const enrichedProducts = products.map((p) => {
-      const sale = { ...p.sale_entry.toObject() };
+      const sale = { ...p.sale_entry };
       return {
-        ...p.toObject(),
+        ...p,
         sale_entry: {
           ...sale,
           seller_name: sale.seller_id
@@ -119,9 +123,38 @@ const getPharmacyBySellerId = async (req, res) => {
 };
 
 const getAllSellers = async (req, res) => {
+  console.log("getAllSellers - start");
   try {
-    // const sellers = await sellerModel.find({});
-    // res.json({ success: true, sellers });
+    const sellers = await sellerModel
+      .find({})
+      .select("-__v -telegram_id")
+      .lean();
+
+    const counts = await productModel.aggregate([
+      {
+        $match: {
+          "sale_entry.seller_id": { $ne: null },
+        },
+      },
+      {
+        $group: {
+          _id: "$sale_entry.seller_id",
+          salesCount: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const countMap = {};
+    counts.forEach((c) => {
+      countMap[c._id.toString()] = c.salesCount;
+    });
+
+    const sellersWithSales = sellers.map((seller) => ({
+      ...seller,
+      salesCount: countMap[seller._id.toString()] || 0,
+    }));
+
+    res.json({ success: true, sellers: sellersWithSales });
   } catch (error) {
     handleServerError(res, error);
   }
