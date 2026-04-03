@@ -1,3 +1,4 @@
+import pharmacyModel from "../models/pharmacyModel.js";
 import productModel from "../models/productModel.js";
 import sellerModel from "../models/sellerModel.js";
 import { handleServerError } from "../utils/utils.js";
@@ -84,9 +85,13 @@ const getProductByPharmacyId = async (req, res) => {
 };
 
 const getAllPharmacies = async (req, res) => {
+  console.log("getAllPharmacies - start");
   try {
-    // const pharmacies = await pharmacyModel.find({});
-    // res.json({ success: true, pharmacies });
+    const pharmacies = await pharmacyModel
+      .find({})
+      .select("-__v, -createdAt, -updatedAt")
+      .lean();
+    res.status(200).json({ success: true, pharmacies });
   } catch (error) {
     handleServerError(res, error);
   }
@@ -176,6 +181,7 @@ const getSellerById = async (req, res) => {
 };
 
 const addSeller = async (req, res) => {
+  console.log("addSeller - start");
   const { name, telegram_user_id } = req.body;
   try {
     // const seller = await sellerModel.create({ name, telegram_user_id });

@@ -1,5 +1,8 @@
 import adminModel from "../models/adminModel.js";
 import managerModel from "../models/managerModel.js";
+import productModel from "../models/productModel.js";
+import pharmacyModel from "../models/pharmacyModel.js";
+import sellerModel from "../models/sellerModel.js";
 import {
   admins,
   managers,
@@ -7,8 +10,9 @@ import {
   product_names,
   sellers,
   warehouse_employees,
+  PHARMACIES,
 } from "../data/data.js";
-import sellerModel from "../models/sellerModel.js";
+
 import {
   generateQRCode,
   getRandomDate,
@@ -16,7 +20,6 @@ import {
   oneWeekAgo,
   twoWeeksAgo,
 } from "./db_utils.js";
-import productModel from "../models/productModel.js";
 
 const admins_populate = async () => {
   try {
@@ -60,25 +63,37 @@ const sellers_populate = async () => {
   }
 };
 
+const pharmacies_populate = async () => {
+  console.log(`Pharmacies populating - started`);
+  try {
+    await pharmacyModel.insertMany(PHARMACIES, { ordered: false });
+    console.log("Pharmacies populated successfully");
+  } catch (error) {
+    if (error.code === 11000) {
+      console.log(
+        "Some pharmacies were already in the database and were skipped",
+      );
+    } else {
+      console.error("ERROR - pharmacies populating:", error);
+    }
+  }
+};
+
 const products_populate = async () => {
   try {
     console.log(`Products populating - started`);
-    // 🔹 Fetch seller IDs
     const sellers = await sellerModel.find({}, { _id: 1 });
 
     if (!sellers.length) throw new Error("No sellers found in DB");
 
     const sellerIds = sellers.map((s) => s._id);
 
-    // 🔹 Generate products
     const products = [];
-
     const NUM_PRODUCTS = 50;
 
     for (let i = 0; i < NUM_PRODUCTS; i++) {
       let saleQr;
 
-      // Ensure unique QR (important due to unique index)
       let isUnique = false;
       while (!isUnique) {
         saleQr = generateQRCode();
@@ -111,7 +126,6 @@ const products_populate = async () => {
       });
     }
 
-    // 🔹 Insert into DB
     await productModel.insertMany(products);
 
     console.log(
@@ -129,4 +143,5 @@ export {
   managers_populate,
   sellers_populate,
   products_populate,
+  pharmacies_populate,
 };

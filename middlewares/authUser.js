@@ -10,7 +10,7 @@ const authUser = (getSellersArray) => {
 
   return async (req, res, next) => {
     try {
-      const SELLERS = await getSellersArray();
+      const SELLERS = getSellersArray();
 
       const { scannerData } = req.body || {};
 

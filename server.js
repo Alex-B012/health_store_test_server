@@ -24,6 +24,7 @@ import {
   managers_populate,
   sellers_populate,
   products_populate,
+  pharmacies_populate,
 } from "./db_service/service.js";
 import managerRouter from "./routes/managerRoute.js";
 
@@ -48,10 +49,12 @@ connectDB();
 // --- TESTING - Populate database with initial data ---
 // const isPopulateAdmins = false;
 // const isPopulateManagers = false;
+// const isPopulatePharmacies = false;
 // const isPopulateSellers = false;
 // const isPopulateProducts = false;
 // if (isPopulateAdmins) admins_populate();
 // if (isPopulateManagers) managers_populate();
+// if (isPopulatePharmacies) pharmacies_populate();
 // if (isPopulateSellers) {
 //   sellers_populate();
 //   products_populate();
