@@ -16,9 +16,9 @@ const handleServerError = (
       success: false,
       message: error?.message || defaultMessage,
     });
-    return true; // response sent
+    return true;
   }
-  return false; // response already sent
+  return false;
 };
 
 const normalizeAPIKey = (str) =>
@@ -34,10 +34,21 @@ const isAuthorizedSeller = (sellers, userId) => {
   return sellers.some((seller) => seller.telegram_user_id === Number(userId));
 };
 
+const parseEnvArray = (value) => {
+  if (!value) return [];
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value.split(",").map((v) => v.trim());
+  }
+};
+
 export {
   handleNodemonRestart,
   handleServerError,
   normalizeAPIKey,
   getSellersArray,
   isAuthorizedSeller,
+  parseEnvArray,
 };

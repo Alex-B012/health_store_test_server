@@ -1,3 +1,4 @@
+import { getRandomTelegramId } from "../db_service/db_utils.js";
 import pharmacyModel from "../models/pharmacyModel.js";
 import productModel from "../models/productModel.js";
 import sellerModel from "../models/sellerModel.js";
@@ -97,6 +98,20 @@ const getAllPharmacies = async (req, res) => {
   }
 };
 
+const getAllPharmacies_addSeller = async (req, res) => {
+  console.log("getAllSellers_addSeller - start");
+  try {
+    const pharmacies = await pharmacyModel
+      .find({})
+      .select("_id name pharmacyNumber")
+      .lean();
+
+    res.status(200).json({ success: true, pharmacies });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
 const getPharmacyById = async (req, res) => {
   const { id } = req.params;
   try {
@@ -182,10 +197,56 @@ const getSellerById = async (req, res) => {
 
 const addSeller = async (req, res) => {
   console.log("addSeller - start");
-  const { name, telegram_user_id } = req.body;
+
+  const { name, dob, employmentPeriod, location_id, telegram_id } = req.body;
+
+  if (
+    !name?.name ||
+    !name?.surname ||
+    !employmentPeriod?.startDate ||
+    !location_id
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Заполните все обязательные поля!",
+    });
+  }
+
   try {
-    // const seller = await sellerModel.create({ name, telegram_user_id });
-    // res.status(201).json({ success: true, seller });
+    // get existing telegram IDs
+    const sellers = await sellerModel
+      .find({})
+      .select("telegram_id -_id")
+      .lean();
+
+    const telegramIds = sellers.map((s) => s.telegram_id);
+
+    let finalTelegramId;
+
+    if (telegram_id) {
+      const parsedId = Number(telegram_id);
+
+      if (telegramIds.includes(parsedId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Telegram ID уже существует",
+        });
+      }
+
+      finalTelegramId = parsedId;
+    } else {
+      finalTelegramId = getRandomTelegramId(telegramIds);
+    }
+
+    const seller = await sellerModel.create({
+      name,
+      dob: dob || null,
+      employmentPeriod,
+      location_id: Number(location_id),
+      telegram_id: finalTelegramId,
+    });
+
+    res.status(201).json({ success: true, seller });
   } catch (error) {
     handleServerError(res, error);
   }
@@ -210,4 +271,5 @@ export {
   addSeller,
   updateSeller,
   deleteSeller,
+  getAllPharmacies_addSeller,
 };

@@ -72,6 +72,7 @@ const pharmacySchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
     pharmacyNumber: { type: String, required: true, trim: true },
+    addedAt: { type: Date, default: Date.now },
     address: addressSchema,
     contact: contactSchema,
     management: { type: [managementSchema], default: [] },

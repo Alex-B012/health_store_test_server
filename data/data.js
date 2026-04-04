@@ -196,6 +196,7 @@ const PHARMACIES = [
   {
     name: "Аптека Здоровье+",
     pharmacyNumber: "10",
+    addedAt: new Date("2026-02-15T10:24:00"),
     address: {
       city: "Москва",
       street: "Ленинский проспект",
@@ -233,6 +234,7 @@ const PHARMACIES = [
   {
     name: "Аптека Здоровье+",
     pharmacyNumber: "11",
+    addedAt: new Date("2026-01-28T14:10:00"),
     address: {
       city: "Санкт-Петербург",
       street: "Невский проспект",
@@ -270,6 +272,7 @@ const PHARMACIES = [
   {
     name: "Аптека Фармия",
     pharmacyNumber: "12",
+    addedAt: new Date("2026-03-05T09:50:00"),
     address: {
       city: "Казань",
       street: "Баумана",
@@ -307,6 +310,7 @@ const PHARMACIES = [
   {
     name: "Аптека Фармия",
     pharmacyNumber: "13",
+    addedAt: new Date("2026-02-20T16:30:00"),
     address: {
       city: "Новосибирск",
       street: "Красный проспект",
@@ -344,6 +348,7 @@ const PHARMACIES = [
   {
     name: "Аптека Солнце",
     pharmacyNumber: "14",
+    addedAt: new Date("2026-03-12T11:15:00"),
     address: {
       city: "Екатеринбург",
       street: "Ленина",
@@ -381,6 +386,7 @@ const PHARMACIES = [
   {
     name: "Аптека Лилия",
     pharmacyNumber: "15",
+    addedAt: new Date("2026-01-10T08:45:00"),
     address: {
       city: "Владивосток",
       street: "Океанский проспект",

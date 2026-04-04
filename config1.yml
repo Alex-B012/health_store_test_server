@@ -3,9 +3,12 @@ agent:
   authtoken: 1tohxKcnJpu3dW5LqrfYg2oN1FM_3vSw8BBq9dwuTXxe8yeuN
 
 tunnels:
-  score_api:
+  server_api:
     proto: http
     addr: 8080
-  weather_api:
+  scanner_api:
     proto: http
     addr: 5500
+  # app_api:
+  #   proto: http
+  #   addr: 5170

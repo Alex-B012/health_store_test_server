@@ -8,6 +8,7 @@ import {
   getSellersArray,
   handleNodemonRestart,
   isAuthorizedSeller,
+  parseEnvArray,
 } from "./utils/utils.js";
 
 import {
@@ -33,15 +34,15 @@ dotenv.config();
 const app = express();
 
 // const LOCALHOST_URL = process.env.LOCALHOST_URL;
-// const SCANNER_URL = process.env.SCANNER_URL;
-const SCANNER_URL_APP = process.env.SCANNER_URL_APP;
+const SCANNER_URL = process.env.SCANNER_URL;
+const MANAGER_URL_APP = process.env.MANAGER_URL_APP;
 
 const PORT = Number(process.env.PORT) || 8080;
 const API_KEY = process.env.API_KEY;
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const bot = new TelegramBot(TOKEN, { polling: true });
 
-const CHAT_ID = Number(process.env.CHAT_ID);
+const CHAT_IDS = process.env.CHAT_IDS;
 const SELLERS = getSellersArray();
 
 connectDB();
@@ -102,31 +103,51 @@ bot.on("message", (msg) => {
   console.log(`Received message from chatId=${chatId}:`, text);
 
   if (text === "/start") {
-    if (!isAuthorizedSeller(SELLERS, userId) || chatId !== CHAT_ID)
+    const isAllowedChat = parseEnvArray(CHAT_IDS);
+
+    if (!isAuthorizedSeller(SELLERS, userId) || !isAllowedChat)
       return bot.sendMessage(
         chatId,
-        `Unauthorized access. You are not registered as a seller.\nYour Telegram ID: ${chatId}`,
+        `Unauthorized access. You are not registered as a seller.\n
+        Your Telegram Chat ID: ${chatId}.\n
+        Please send this ID to the admin to complete your registration.`,
       );
 
     return bot.sendMessage(
       chatId,
-      "AgACAgIAAxkBAAEKHFxpa_vsbDbT2PMUh6IGx-7mhl2myQACvwxrG01UYEuIl19rH-5qRAEAAwIAA3gAAzgE",
+      `<b>━━ </b><b> AKIS Pharma -- Demo </b><b> ━━</b>\n\nВыберите действие:`,
       {
+        parse_mode: "HTML",
         reply_markup: {
           inline_keyboard: [
-            [{ text: "Открыть Сканер", web_app: { url: SCANNER_URL_APP } }],
+            [
+              {
+                text: "Открыть Сканер",
+                web_app: { url: `${SCANNER_URL}/index.html` },
+              },
+            ],
+            [
+              {
+                text: "Добавить продавца",
+                web_app: { url: `${MANAGER_URL_APP}/add-seller` },
+              },
+            ],
+            [
+              {
+                text: "Панель Менеджера",
+                web_app: { url: `${MANAGER_URL_APP}` },
+              },
+            ],
           ],
         },
       },
     );
-  } else if (text === "/manager") {
-    return bot.sendMessage(chatId, `Manager command received: ${text}`);
   } else if (text === "/admin") {
     return bot.sendMessage(chatId, `Admin command received: ${text}`);
   }
 
   if (!checkChatId(chatId))
-    return console.log("Received message from unauthorized chat ID:", chatId);
+    return console.log("Received message from unauthorized Chat ID:", chatId);
 
   bot.sendMessage(chatId, `Message received: ${text}`);
 });

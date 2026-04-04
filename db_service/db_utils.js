@@ -22,9 +22,7 @@ function getRandomDate(start, end) {
     start.getTime() + Math.random() * (end.getTime() - start.getTime()),
   );
 }
-
 const now = new Date();
-
 // 2 weeks ago → 1 week ago
 const twoWeeksAgo = new Date(now);
 twoWeeksAgo.setDate(now.getDate() - 14);
@@ -32,10 +30,25 @@ twoWeeksAgo.setDate(now.getDate() - 14);
 const oneWeekAgo = new Date(now);
 oneWeekAgo.setDate(now.getDate() - 7);
 
+// Get random Telegram ID for testing
+
+const getRandomTelegramId = (arr) => {
+  const existing = Array.isArray(arr) ? arr : [];
+  const maxAttempts = 1000;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const randomId = Math.floor(10000000 + Math.random() * 90000000);
+    if (!existing.includes(randomId)) return randomId;
+  }
+
+  throw new Error("Unable to generate unique Telegram ID");
+};
+
 export {
   generateQRCode,
   getRandomFromArray,
   getRandomDate,
   twoWeeksAgo,
   oneWeekAgo,
+  getRandomTelegramId,
 };
