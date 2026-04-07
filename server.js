@@ -65,11 +65,11 @@ connectDB();
 
 app.use(express.json());
 
-// app.use(
-//   cors({
-//     origin: [LOCALHOST_URL, SCANNER_URL],
-//   }),
-// );
+app.use(
+  cors({
+    origin: [SCANNER_URL, MANAGER_URL_APP],
+  }),
+);
 
 app.use(cors({}));
 
