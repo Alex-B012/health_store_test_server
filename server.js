@@ -133,7 +133,13 @@ bot.on("message", (msg) => {
   const userId = msg.from.id;
   const text = msg.text;
 
-  console.log(`Received message from chatId=${chatId}:`, text);
+  console.log(
+    `Received message from chatId=${chatId}:`,
+    text,
+    "\n",
+    `userId=${userId}:`,
+    userId,
+  );
 
   if (text === "/start") {
     const isAllowedChat = parseEnvArray(CHAT_IDS)
