@@ -118,7 +118,7 @@ app.post("/api/test", (req, res) => {
 });
 
 app.post(`/bot${TOKEN}`, (req, res) => {
-  bot.processUpdate(req.body); // processes messages, commands, etc.
+  bot.processUpdate(req.body);
   res.sendStatus(200);
 });
 
@@ -136,9 +136,10 @@ bot.on("message", (msg) => {
   console.log(`Received message from chatId=${chatId}:`, text);
 
   if (text === "/start") {
-    const isAllowedChat = parseEnvArray(CHAT_IDS);
+    const isAllowedChat = parseEnvArray(CHAT_IDS).includes(chatId.toString());
+    const isAuthorized = isAuthorizedSeller(SELLERS, userId);
 
-    if (!isAuthorizedSeller(SELLERS, userId) || !isAllowedChat)
+    if (!isAuthorized || !isAllowedChat)
       return bot.sendMessage(
         chatId,
         `Unauthorized access. You are not registered as a seller.\n

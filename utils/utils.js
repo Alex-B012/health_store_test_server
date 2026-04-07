@@ -34,15 +34,18 @@ const isAuthorizedSeller = (sellers, userId) => {
   return sellers.some((seller) => seller.telegram_user_id === Number(userId));
 };
 
-const parseEnvArray = (value) => {
-  if (!value) return [];
+function parseEnvArray(envVar) {
+  if (!envVar) return [];
 
   try {
-    return JSON.parse(value);
-  } catch {
-    return value.split(",").map((v) => v.trim());
+    const parsed = JSON.parse(envVar);
+    if (Array.isArray(parsed)) return parsed.map(String);
+  } catch (err) {
+    return envVar.split(",").map((s) => s.trim());
   }
-};
+
+  return [];
+}
 
 export {
   handleNodemonRestart,
