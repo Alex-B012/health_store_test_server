@@ -67,7 +67,12 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: [MANAGER_URL_APP, SCANNER_URL],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (!allowedOrigins.includes(origin))
+        return callback(new Error("CORS denied"), false);
+      return callback(null, true);
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   }),
 );
