@@ -67,7 +67,8 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: [SCANNER_URL, MANAGER_URL_APP],
+    origin: [MANAGER_URL_APP, SCANNER_URL],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   }),
 );
 
