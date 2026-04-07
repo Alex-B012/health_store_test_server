@@ -153,7 +153,7 @@ bot.on("message", (msg) => {
             [
               {
                 text: "Открыть Сканер",
-                web_app: { url: `${SCANNER_URL}/index.html` },
+                web_app: { url: `${SCANNER_URL}` },
               },
             ],
             [
