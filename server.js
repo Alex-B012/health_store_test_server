@@ -136,11 +136,25 @@ bot.on("message", (msg) => {
   console.log(`Received message from chatId=${chatId}:`, text);
 
   if (text === "/start") {
-    const isAllowedChat = parseEnvArray(CHAT_IDS).includes(chatId.toString());
+    const isAllowedChat = parseEnvArray(CHAT_IDS)
+      .map((id) => id.trim())
+      .includes(chatId.toString());
     const isAuthorized = isAuthorizedSeller(SELLERS, userId);
+
+    const chatIdsArray = parseEnvArray(CHAT_IDS);
+
+    console.log(
+      "chatId:",
+      `'${chatId.toString()}' (type: ${typeof chatId.toString()})`,
+    );
+    chatIdsArray.forEach((id, index) => {
+      console.log(`Element ${index}: '${id}' (type: ${typeof id})`);
+    });
 
     console.log("Type:", typeof parseEnvArray(CHAT_IDS));
     console.log("parseEnvArray(CHAT_IDS)", parseEnvArray(CHAT_IDS));
+
+    console.log("isAllowedChat:", isAllowedChat);
 
     console.log(
       "isAuthorized - ",
