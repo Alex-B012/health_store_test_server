@@ -36,11 +36,14 @@ const app = express();
 // const LOCALHOST_URL = process.env.LOCALHOST_URL;
 const SCANNER_URL = process.env.SCANNER_URL;
 const MANAGER_URL_APP = process.env.MANAGER_URL_APP;
+const SERVER_URL = process.env.SERVER_URL;
+const allowedOrigins = [MANAGER_URL_APP, SCANNER_URL];
 
 const PORT = Number(process.env.PORT) || 8080;
 const API_KEY = process.env.API_KEY;
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const bot = new TelegramBot(TOKEN, { polling: true });
+// const bot = new TelegramBot(TOKEN, { polling: true });
+const bot = new TelegramBot(TOKEN);
 
 const CHAT_IDS = process.env.CHAT_IDS;
 const SELLERS = getSellersArray();
@@ -64,6 +67,8 @@ connectDB();
 // if (isPopulateProducts) products_populate();
 
 app.use(express.json());
+
+bot.setWebHook(`${SERVER_URL}/bot${TOKEN}`);
 
 app.use(
   cors({
@@ -93,6 +98,11 @@ app.get("/", (req, res) => {
 
 app.post("/api/test", (req, res) => {
   res.json({ message: "This is secure API data." });
+});
+
+app.post(`/bot${TOKEN}`, (req, res) => {
+  bot.processUpdate(req.body); // processes messages, commands, etc.
+  res.sendStatus(200);
 });
 
 // --- Error handling middleware ---
