@@ -70,20 +70,22 @@ app.use(express.json());
 
 bot.setWebHook(`${SERVER_URL}/bot${TOKEN}`);
 
-app.use((req, res, next) => {
-  console.log("Request origin:", req.headers.origin);
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log("Request origin:", req.headers.origin);
+//   next();
+// });
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      console.log("CORS check for origin:", origin); // debug
-      if (!origin) return callback(null, true); // allow non-browser requests
-      if (allowedOrigins.some((url) => origin.startsWith(url))) {
+      console.log("CORS check for origin:", origin);
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error("CORS denied"), false);
+
+      return callback(null, false);
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   }),
