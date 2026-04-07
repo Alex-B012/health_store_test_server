@@ -139,6 +139,9 @@ bot.on("message", (msg) => {
     const isAllowedChat = parseEnvArray(CHAT_IDS).includes(chatId.toString());
     const isAuthorized = isAuthorizedSeller(SELLERS, userId);
 
+    console.log("Type:", typeof isAllowedChat);
+    console.log("isAllowedChat", isAllowedChat);
+
     if (!isAuthorized || !isAllowedChat)
       return bot.sendMessage(
         chatId,
