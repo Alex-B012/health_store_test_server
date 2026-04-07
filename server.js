@@ -163,7 +163,7 @@ bot.on("message", (msg) => {
       isAllowedChat,
     );
 
-    if (!isAuthorized || !isAllowedChat)
+    if (!isAllowedChat)
       return bot.sendMessage(
         chatId,
         `Unauthorized access. You are not registered as a seller.\n
