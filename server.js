@@ -142,6 +142,13 @@ bot.on("message", (msg) => {
     console.log("Type:", typeof parseEnvArray(CHAT_IDS));
     console.log("parseEnvArray(CHAT_IDS)", parseEnvArray(CHAT_IDS));
 
+    console.log(
+      "isAuthorized - ",
+      isAuthorized,
+      "isAllowedChat - ",
+      isAllowedChat,
+    );
+
     if (!isAuthorized || !isAllowedChat)
       return bot.sendMessage(
         chatId,
@@ -181,6 +188,36 @@ bot.on("message", (msg) => {
     );
   } else if (text === "/admin") {
     return bot.sendMessage(chatId, `Admin command received: ${text}`);
+  } else if (text === "/super_secret_demo") {
+    return bot.sendMessage(
+      chatId,
+      `<b>━━ </b><b> AKIS Pharma -- Demo </b><b> ━━</b>\n\nВыберите действие:`,
+      {
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "Открыть Сканер",
+                web_app: { url: `${SCANNER_URL}` },
+              },
+            ],
+            [
+              {
+                text: "Добавить продавца",
+                web_app: { url: `${MANAGER_URL_APP}/add-seller` },
+              },
+            ],
+            [
+              {
+                text: "Панель Менеджера",
+                web_app: { url: `${MANAGER_URL_APP}` },
+              },
+            ],
+          ],
+        },
+      },
+    );
   }
 
   if (!checkChatId(chatId))

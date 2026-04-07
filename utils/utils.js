@@ -36,9 +36,11 @@ const isAuthorizedSeller = (sellers, userId) => {
 
 function parseEnvArray(envVar) {
   if (!envVar) return [];
+  console.log("envVar - start:", envVar);
 
   try {
     const parsed = JSON.parse(envVar);
+    console.log("parsed - ", parsed);
     if (Array.isArray(parsed)) return parsed.map(String);
   } catch (err) {
     return envVar.split(",").map((s) => s.trim());
