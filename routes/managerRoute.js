@@ -6,6 +6,7 @@ import {
   addSeller,
   getAllPharmacies_addSeller,
   getAllManagers,
+  getAllAdmins,
 } from "../controllers/managerController.js";
 import authUser from "../middlewares/authUser.js";
 import { getSellersArray } from "../utils/utils.js";
@@ -19,5 +20,6 @@ managerRouter.post("/seller", addSeller);
 managerRouter.get("/pharmacies", getAllPharmacies);
 managerRouter.get("/pharmacies-add-seller", getAllPharmacies_addSeller);
 managerRouter.get("/managers", getAllManagers);
+managerRouter.get("/admins", getAllAdmins);
 
 export default managerRouter;

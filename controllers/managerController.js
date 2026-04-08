@@ -1,4 +1,5 @@
 import { getRandomTelegramId } from "../db_service/db_utils.js";
+import adminModel from "../models/adminModel.js";
 import managerModel from "../models/managerModel.js";
 import pharmacyModel from "../models/pharmacyModel.js";
 import productModel from "../models/productModel.js";
@@ -245,7 +246,6 @@ const addSeller = async (req, res) => {
   }
 
   try {
-    // get existing telegram IDs
     const sellers = await sellerModel
       .find({})
       .select("telegram_id -_id")
@@ -314,6 +314,27 @@ const getAllManagers = async (req, res) => {
   }
 };
 
+const getAllAdmins = async (req, res) => {
+  console.log("getAllAdmins - start");
+  try {
+    const admins = await adminModel
+      .find({})
+      .select("-__v -employmentPeriod.startDate -employmentPeriod.endDate")
+      .lean();
+
+    const sortedAdmins = [...admins].sort((a, b) => {
+      const nameA = a.name.surname + a.name.name + a.name.patronymic;
+      const nameB = b.name.surname + b.name.name + b.name.patronymic;
+      return nameA.localeCompare(nameB, "ru");
+    });
+
+    console.log(`getAllAdmins - admins found: ${sortedAdmins.length}`);
+    res.json({ success: true, admins: sortedAdmins });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
 export {
   getAllProducts,
   getProductById,
@@ -326,4 +347,5 @@ export {
   deleteSeller,
   getAllPharmacies_addSeller,
   getAllManagers,
+  getAllAdmins,
 };

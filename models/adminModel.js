@@ -2,11 +2,16 @@ import mongoose from "mongoose";
 
 const adminSchema = new mongoose.Schema({
   name: {
-    type: String,
-    required: [true, "Admin name is required"],
+    name: { type: String, required: [true, "First name is required"] },
+    patronymic: { type: String, required: false },
+    surname: { type: String, required: [true, "Surname is required"] },
   },
   dob: {
     type: Date,
+  },
+  contacts: {
+    email: { type: String },
+    phone: { type: String },
   },
   employmentPeriod: {
     status: { type: String, enum: ["active", "inactive"], default: "active" },
