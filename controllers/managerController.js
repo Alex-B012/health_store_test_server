@@ -92,7 +92,38 @@ const getAllPharmacies = async (req, res) => {
       .find({})
       .select("-__v, -createdAt, -updatedAt")
       .lean();
-    res.status(200).json({ success: true, pharmacies });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Loop through pharmacies and add counts
+    const enrichedPharmacies = await Promise.all(
+      pharmacies.map(async (pharmacy) => {
+        const pharmacyNumber = Number(pharmacy.pharmacyNumber);
+
+        const sales = await productModel.countDocuments({
+          pharmacy_id: pharmacyNumber,
+          "sale_entry.qr_code": { $exists: true, $ne: "" },
+        });
+
+        const sellers = await sellerModel.countDocuments({
+          location_id: pharmacyNumber,
+          $or: [
+            { "employmentPeriod.endDate": { $gt: today } },
+            { "employmentPeriod.endDate": null },
+            { "employmentPeriod.endDate": { $exists: false } },
+          ],
+        });
+
+        return {
+          ...pharmacy,
+          sales,
+          sellers,
+        };
+      }),
+    );
+
+    res.status(200).json({ success: true, pharmacies: enrichedPharmacies });
   } catch (error) {
     handleServerError(res, error);
   }

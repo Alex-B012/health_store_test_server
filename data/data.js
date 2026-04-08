@@ -201,7 +201,7 @@ const PHARMACIES = [
       city: "Москва",
       street: "Ленинский проспект",
       buildingNumber: "12",
-      province: "Московская область",
+      province: "",
       zipCode: "119049",
     },
     contact: {
@@ -239,7 +239,7 @@ const PHARMACIES = [
       city: "Санкт-Петербург",
       street: "Невский проспект",
       buildingNumber: "45",
-      province: "Ленинградская область",
+      province: "",
       zipCode: "191025",
     },
     contact: {
@@ -277,7 +277,7 @@ const PHARMACIES = [
       city: "Казань",
       street: "Баумана",
       buildingNumber: "33",
-      province: "Татарстан",
+      province: "Республика Татарстан",
       zipCode: "420111",
     },
     contact: {
