@@ -21,7 +21,7 @@ const product_names = [
   "Тест товар 10",
 ];
 
-const sellers = [
+const SELLERS = [
   {
     name: { name: "Иван", patronymic: "Сергеевич", surname: "Петров" },
     dob: new Date("1990-04-12"),
@@ -101,9 +101,9 @@ const sellers = [
   },
 ];
 
-const managers = [
+const MANAGERS = [
   {
-    name: "Александр Викторович Орлов",
+    name: { name: "Александр", patronymic: "Викторович", surname: "Орлов" },
     dob: new Date("1980-06-14"),
     employmentPeriod: {
       status: "active",
@@ -114,7 +114,7 @@ const managers = [
     telegram_id: 91827364,
   },
   {
-    name: "Максим Андреевич Федоров",
+    name: { name: "Максим", patronymic: "Андреевич", surname: "Федоров" },
     dob: new Date("1991-11-22"),
     employmentPeriod: {
       status: "active",
@@ -125,7 +125,7 @@ const managers = [
     telegram_id: 82736455,
   },
   {
-    name: "Ольга Сергеевна Морозова",
+    name: { name: "Ольга", patronymic: "Сергеевна", surname: "Морозова" },
     dob: new Date("1987-03-08"),
     employmentPeriod: {
       status: "active",
@@ -136,7 +136,7 @@ const managers = [
     telegram_id: 73645582,
   },
   {
-    name: "Наталья Дмитриевна Васильева",
+    name: { name: "Наталья", patronymic: "Дмитриевна", surname: "Васильева" },
     dob: new Date("1993-07-19"),
     employmentPeriod: {
       status: "active",
@@ -147,7 +147,7 @@ const managers = [
     telegram_id: 64558291,
   },
   {
-    name: "Елена Павловна Новикова",
+    name: { name: "Елена", patronymic: "Павловна", surname: "Новикова" },
     dob: new Date("1985-12-02"),
     employmentPeriod: {
       status: "active",
@@ -159,7 +159,7 @@ const managers = [
   },
 ];
 
-const admins = [
+const ADMINS = [
   {
     name: "Андрей Николаевич Крылов",
     dob: new Date("1979-08-11"),
@@ -428,8 +428,8 @@ export {
   roles,
   warehouse_employees,
   product_names,
-  sellers,
-  managers,
-  admins,
+  SELLERS,
+  MANAGERS,
+  ADMINS,
   PHARMACIES,
 };

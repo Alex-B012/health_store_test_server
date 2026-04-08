@@ -1,4 +1,5 @@
 import { getRandomTelegramId } from "../db_service/db_utils.js";
+import managerModel from "../models/managerModel.js";
 import pharmacyModel from "../models/pharmacyModel.js";
 import productModel from "../models/productModel.js";
 import sellerModel from "../models/sellerModel.js";
@@ -85,6 +86,7 @@ const getProductByPharmacyId = async (req, res) => {
   }
 };
 
+// API to get all pharmacies with enriched data, including total sales and the number of current sellers for each pharmacy
 const getAllPharmacies = async (req, res) => {
   console.log("getAllPharmacies - start");
   try {
@@ -96,7 +98,6 @@ const getAllPharmacies = async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Loop through pharmacies and add counts
     const enrichedPharmacies = await Promise.all(
       pharmacies.map(async (pharmacy) => {
         const pharmacyNumber = Number(pharmacy.pharmacyNumber);
@@ -292,6 +293,27 @@ const deleteSeller = (req, res) => {
   const { id } = req.params;
 };
 
+const getAllManagers = async (req, res) => {
+  console.log("getAllManagers - start");
+  try {
+    const managers = await managerModel
+      .find({})
+      .select("-__v -telegram_id")
+      .lean();
+
+    const sortedManagers = [...managers].sort((a, b) => {
+      const nameA = a.name.surname + a.name.name + a.name.patronymic;
+      const nameB = b.name.surname + b.name.name + b.name.patronymic;
+      return nameA.localeCompare(nameB, "ru");
+    });
+
+    console.log(`getAllManagers - managers found: ${sortedManagers.length}`);
+    res.json({ success: true, managers: sortedManagers });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
 export {
   getAllProducts,
   getProductById,
@@ -303,4 +325,5 @@ export {
   updateSeller,
   deleteSeller,
   getAllPharmacies_addSeller,
+  getAllManagers,
 };

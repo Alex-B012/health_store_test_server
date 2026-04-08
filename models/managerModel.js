@@ -2,8 +2,9 @@ import mongoose from "mongoose";
 
 const managerSchema = new mongoose.Schema({
   name: {
-    type: String,
-    required: [true, "Manager name is required"],
+    name: { type: String, required: [true, "First name is required"] },
+    patronymic: { type: String, required: false },
+    surname: { type: String, required: [true, "Surname is required"] },
   },
   dob: {
     type: Date,

@@ -4,11 +4,11 @@ import productModel from "../models/productModel.js";
 import pharmacyModel from "../models/pharmacyModel.js";
 import sellerModel from "../models/sellerModel.js";
 import {
-  admins,
-  managers,
+  ADMINS,
+  MANAGERS,
   pharmacies_codes,
   product_names,
-  sellers,
+  SELLERS,
   warehouse_employees,
   PHARMACIES,
 } from "../data/data.js";
@@ -23,7 +23,7 @@ import {
 
 const admins_populate = async () => {
   try {
-    const preparedAdmins = admins.map((admin, index) => ({
+    const preparedAdmins = ADMINS.map((admin, index) => ({
       ...admin,
       admin_id: index + 1,
     }));
@@ -37,7 +37,7 @@ const admins_populate = async () => {
 
 const managers_populate = async () => {
   try {
-    const preparedManagers = managers.map((manager, index) => ({
+    const preparedManagers = MANAGERS.map((manager, index) => ({
       ...manager,
       telegram_id: manager.telegram_id || index + 1,
     }));
@@ -51,7 +51,7 @@ const managers_populate = async () => {
 
 const sellers_populate = async () => {
   try {
-    const preparedSellers = sellers.map((seller, index) => ({
+    const preparedSellers = SELLERS.map((seller, index) => ({
       ...seller,
       telegram_id: seller.telegram_id || index + 1,
     }));
