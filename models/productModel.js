@@ -5,6 +5,10 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: [true, "Product name is required"],
   },
+  name_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product",
+  },
   stock_entry: {
     qr_code: { type: String },
     date: { type: Date },

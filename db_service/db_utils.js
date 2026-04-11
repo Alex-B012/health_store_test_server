@@ -44,6 +44,12 @@ const getRandomTelegramId = (arr) => {
   throw new Error("Unable to generate unique Telegram ID");
 };
 
+const generateRandomPhone = () => {
+  const prefix = Math.random() < 0.5 ? "+7" : "8";
+  const rest = Math.floor(10000000 + Math.random() * 9000000000).toString();
+  return prefix + rest;
+};
+
 export {
   generateQRCode,
   getRandomFromArray,
@@ -51,4 +57,5 @@ export {
   twoWeeksAgo,
   oneWeekAgo,
   getRandomTelegramId,
+  generateRandomPhone,
 };

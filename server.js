@@ -26,6 +26,7 @@ import {
   sellers_populate,
   products_populate,
   pharmacies_populate,
+  populateProductNames,
 } from "./db_service/service.js";
 import managerRouter from "./routes/managerRoute.js";
 
@@ -55,6 +56,7 @@ connectDB();
 // const isPopulateManagers = false;
 // const isPopulatePharmacies = false;
 // const isPopulateSellers = false;
+// const isPopulateProductNames = false;
 // const isPopulateProducts = false;
 // if (isPopulateAdmins) admins_populate();
 // if (isPopulateManagers) managers_populate();
@@ -64,6 +66,7 @@ connectDB();
 //   products_populate();
 //   products_populate();
 // }
+// if (isPopulateProductNames) populateProductNames();
 // if (isPopulateProducts) products_populate();
 
 app.use(express.json());

@@ -1,5 +1,6 @@
 import adminModel from "../models/adminModel.js";
 import managerModel from "../models/managerModel.js";
+import productNameModel from "../models/productNameModel.js";
 import productModel from "../models/productModel.js";
 import pharmacyModel from "../models/pharmacyModel.js";
 import sellerModel from "../models/sellerModel.js";
@@ -7,7 +8,7 @@ import {
   ADMINS,
   MANAGERS,
   pharmacies_codes,
-  product_names,
+  PRODUCTS_NAMES,
   SELLERS,
   warehouse_employees,
   PHARMACIES,
@@ -79,17 +80,44 @@ const pharmacies_populate = async () => {
   }
 };
 
+const populateProductNames = async () => {
+  try {
+    console.log("Product names populating - started");
+
+    const result = await productNameModel.insertMany(PRODUCTS_NAMES, {
+      ordered: false,
+    });
+
+    console.log("INSERTED:", result.length);
+    console.log("Product names populated successfully");
+  } catch (error) {
+    console.error("ERROR - product names populating:");
+
+    console.error(JSON.stringify(error, null, 2));
+  }
+};
+
 const products_populate = async () => {
   try {
     console.log(`Products populating - started`);
-    const sellers = await sellerModel.find({}, { _id: 1 });
 
+    const sellers = await sellerModel.find({}, { _id: 1 });
     if (!sellers.length) throw new Error("No sellers found in DB");
 
     const sellerIds = sellers.map((s) => s._id);
 
+    const productNames = await productNameModel
+      .find({}, { _id: 1, name: 1 })
+      .lean();
+
+    if (!productNames.length) {
+      throw new Error("No product names found");
+    }
+
+    const filteredPharmacies = pharmacies_codes.filter((code) => code !== 1);
+
     const products = [];
-    const NUM_PRODUCTS = 50;
+    const NUM_PRODUCTS = 100;
 
     for (let i = 0; i < NUM_PRODUCTS; i++) {
       let saleQr;
@@ -103,11 +131,16 @@ const products_populate = async () => {
         if (!exists) isUnique = true;
       }
 
+      const randomProduct =
+        productNames[Math.floor(Math.random() * productNames.length)];
+
       products.push({
-        name: product_names[Math.floor(Math.random() * product_names.length)],
-        pharmacy_id: pharmacies_codes.filter((code) => code !== 1)[
-          Math.floor(Math.random() * (pharmacies_codes.length - 1))
-        ],
+        name: randomProduct.name,
+        name_id: randomProduct._id,
+        pharmacy_id:
+          filteredPharmacies[
+            Math.floor(Math.random() * filteredPharmacies.length)
+          ],
 
         stock_entry: {
           qr_code: saleQr,
@@ -131,8 +164,6 @@ const products_populate = async () => {
     console.log(
       `Products populated successfully - Inserted ${NUM_PRODUCTS} products`,
     );
-
-    console.log("");
   } catch (error) {
     console.error("ERROR - products populating:", error);
   }
@@ -144,4 +175,5 @@ export {
   sellers_populate,
   products_populate,
   pharmacies_populate,
+  populateProductNames,
 };

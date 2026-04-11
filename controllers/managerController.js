@@ -1,4 +1,7 @@
-import { getRandomTelegramId } from "../db_service/db_utils.js";
+import {
+  generateRandomPhone,
+  getRandomTelegramId,
+} from "../db_service/db_utils.js";
 import adminModel from "../models/adminModel.js";
 import managerModel from "../models/managerModel.js";
 import pharmacyModel from "../models/pharmacyModel.js";
@@ -231,7 +234,8 @@ const getSellerById = async (req, res) => {
 const addSeller = async (req, res) => {
   console.log("addSeller - start");
 
-  const { name, dob, employmentPeriod, location_id, telegram_id } = req.body;
+  const { name, dob, employmentPeriod, location_id, telegram_id, phone } =
+    req.body;
 
   if (
     !name?.name ||
@@ -248,11 +252,15 @@ const addSeller = async (req, res) => {
   try {
     const sellers = await sellerModel
       .find({})
-      .select("telegram_id -_id")
+      .select("telegram_id phone -_id")
       .lean();
 
     const telegramIds = sellers.map((s) => s.telegram_id);
+    const phones = sellers.map((s) => s.phone);
 
+    // ---------------------------
+    // TELEGRAM ID
+    // ---------------------------
     let finalTelegramId;
 
     if (telegram_id) {
@@ -270,12 +278,40 @@ const addSeller = async (req, res) => {
       finalTelegramId = getRandomTelegramId(telegramIds);
     }
 
+    // ---------------------------
+    // PHONE (NEW LOGIC)
+    // ---------------------------
+    let finalPhone;
+
+    if (phone) {
+      if (phones.includes(phone)) {
+        return res.status(400).json({
+          success: false,
+          message: "Телефон уже существует",
+        });
+      }
+
+      finalPhone = phone;
+    } else {
+      let generatedPhone;
+
+      do {
+        generatedPhone = generateRandomPhone();
+      } while (phones.includes(generatedPhone));
+
+      finalPhone = generatedPhone;
+    }
+
+    // ---------------------------
+    // CREATE SELLER
+    // ---------------------------
     const seller = await sellerModel.create({
       name,
       dob: dob || null,
       employmentPeriod,
       location_id: Number(location_id),
       telegram_id: finalTelegramId,
+      phone: finalPhone,
     });
 
     res.status(201).json({ success: true, seller });

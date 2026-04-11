@@ -1,4 +1,4 @@
-import { product_names, warehouse_employees } from "../data/data.js";
+import { PRODUCTS_NAMES, warehouse_employees } from "../data/data.js";
 import sellerModel from "../models/sellerModel.js";
 
 const test_generateProductName = () => {
@@ -12,13 +12,13 @@ const test_generateProductName = () => {
 
   const timestamp = `${year}-${month}-${day} - ${hours}:${minutes}:${seconds}`;
 
-  const isOddDay = now.getDate() % 2 === 1;
-  const availableProducts = isOddDay
-    ? product_names.filter((name) => !name.includes("Тест товар"))
-    : product_names;
+  // const isOddDay = now.getDate() % 2 === 1;
+  // const availableProducts = isOddDay
+  //   ? PRODUCTS_NAMES.filter((item) => !item.name.includes("Тест товар"))
+  //   : PRODUCTS_NAMES;
 
   const randomName =
-    availableProducts[Math.floor(Math.random() * availableProducts.length)];
+    PRODUCTS_NAMES[Math.floor(Math.random() * PRODUCTS_NAMES.length)];
 
   return `${timestamp} - ${randomName}`;
 };
