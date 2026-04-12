@@ -71,7 +71,7 @@ const businessHoursSchema = new Schema(
 const pharmacySchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
-    pharmacyNumber: { type: String, required: true, trim: true },
+    pharmacyNumber: { type: Number, required: true },
     addedAt: { type: Date, default: Date.now },
     address: addressSchema,
     contact: contactSchema,

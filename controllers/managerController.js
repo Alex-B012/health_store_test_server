@@ -60,6 +60,19 @@ const getProductById = async (req, res) => {
   }
 };
 
+const addProducts = async (req, res) => {
+  console.log("addProducts - start");
+  try {
+    const { name, price, pharmacy_id } = req.body;
+    res.status(201).json({
+      success: true,
+      message: "Товары успешно добавлены!",
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
 const getProductBySellerId = async (req, res) => {
   const { id } = req.params;
   try {

@@ -267,7 +267,7 @@ const ADMINS = [
 const PHARMACIES = [
   {
     name: "AKIS Pharma",
-    pharmacyNumber: "09",
+    pharmacyNumber: 9,
     addedAt: new Date("2026-04-11T09:12:00"),
     address: {
       city: "Душанбе",
@@ -305,7 +305,7 @@ const PHARMACIES = [
   },
   {
     name: "Аптека Здоровье+",
-    pharmacyNumber: "10",
+    pharmacyNumber: 10,
     addedAt: new Date("2026-02-15T10:24:00"),
     address: {
       city: "Москва",
@@ -343,7 +343,7 @@ const PHARMACIES = [
   },
   {
     name: "Аптека Здоровье+",
-    pharmacyNumber: "11",
+    pharmacyNumber: 11,
     addedAt: new Date("2026-01-28T14:10:00"),
     address: {
       city: "Санкт-Петербург",
@@ -381,7 +381,7 @@ const PHARMACIES = [
   },
   {
     name: "Аптека Фармия",
-    pharmacyNumber: "12",
+    pharmacyNumber: 12,
     addedAt: new Date("2026-03-05T09:50:00"),
     address: {
       city: "Казань",
@@ -419,7 +419,7 @@ const PHARMACIES = [
   },
   {
     name: "Аптека Фармия",
-    pharmacyNumber: "13",
+    pharmacyNumber: 13,
     addedAt: new Date("2026-02-20T16:30:00"),
     address: {
       city: "Новосибирск",
@@ -457,7 +457,7 @@ const PHARMACIES = [
   },
   {
     name: "Аптека Солнце",
-    pharmacyNumber: "14",
+    pharmacyNumber: 14,
     addedAt: new Date("2026-03-12T11:15:00"),
     address: {
       city: "Екатеринбург",
@@ -495,7 +495,7 @@ const PHARMACIES = [
   },
   {
     name: "Аптека Лилия",
-    pharmacyNumber: "15",
+    pharmacyNumber: 15,
     addedAt: new Date("2026-01-10T08:45:00"),
     address: {
       city: "Владивосток",
