@@ -18,10 +18,7 @@ const getAllProducts = async (req, res) => {
   console.log("getAllProducts - start");
 
   try {
-    const products = await productModel
-      .find({})
-      .select("-__v -stock_entry")
-      .lean();
+    const products = await productModel.find({}).select("-__v").lean();
     const sellers = await sellerModel.find({}).select("_id name").lean();
 
     const sellerMap = {};
@@ -110,8 +107,6 @@ const addProducts = async (req, res) => {
       pharmacy_id: pharmacies.find((ph) => ph._id.toString() === pharmacy)
         ?.pharmacyNumber,
       sale_entry: {
-        qr_code: `${formattedDate}_${item.code}`,
-        date: new Date(date),
         seller_id: seller,
       },
     }));
@@ -121,7 +116,6 @@ const addProducts = async (req, res) => {
         !doc.name ||
         !doc.name_id ||
         !doc.stock_entry?.qr_code ||
-        !doc.sale_entry?.qr_code ||
         !doc.pharmacy_id ||
         !doc.sale_entry?.seller_id
       );
