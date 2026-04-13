@@ -205,10 +205,11 @@ const getProductByPharmacyId = async (req, res) => {
 // API to get all pharmacies with enriched data, including total sales and the number of current sellers for each pharmacy
 const getAllPharmacies = async (req, res) => {
   console.log("getAllPharmacies - start");
+
   try {
     const pharmacies = await pharmacyModel
       .find({})
-      .select("-__v, -createdAt, -updatedAt")
+      .select("-__v -createdAt -updatedAt")
       .lean();
 
     const today = new Date();
@@ -218,29 +219,42 @@ const getAllPharmacies = async (req, res) => {
       pharmacies.map(async (pharmacy) => {
         const pharmacyNumber = Number(pharmacy.pharmacyNumber);
 
-        const sales = await productModel.countDocuments({
-          pharmacy_id: pharmacyNumber,
-          "sale_entry.qr_code": { $exists: true, $ne: "" },
-        });
+        const [total_products, sold, sellers] = await Promise.all([
+          productModel.countDocuments({
+            pharmacy_id: pharmacyNumber,
+            "stock_entry.qr_code": { $exists: true, $ne: "" },
+          }),
 
-        const sellers = await sellerModel.countDocuments({
-          location_id: pharmacyNumber,
-          $or: [
-            { "employmentPeriod.endDate": { $gt: today } },
-            { "employmentPeriod.endDate": null },
-            { "employmentPeriod.endDate": { $exists: false } },
-          ],
-        });
+          productModel.countDocuments({
+            pharmacy_id: pharmacyNumber,
+            "sale_entry.qr_code": { $exists: true, $ne: "" },
+          }),
+
+          sellerModel.countDocuments({
+            location_id: pharmacyNumber,
+            $or: [
+              { "employmentPeriod.endDate": { $gt: today } },
+              { "employmentPeriod.endDate": null },
+              { "employmentPeriod.endDate": { $exists: false } },
+            ],
+          }),
+        ]);
 
         return {
           ...pharmacy,
-          sales,
+          stats: {
+            total_products,
+            sold,
+          },
           sellers,
         };
       }),
     );
 
-    res.status(200).json({ success: true, pharmacies: enrichedPharmacies });
+    return res.status(200).json({
+      success: true,
+      pharmacies: enrichedPharmacies,
+    });
   } catch (error) {
     handleServerError(res, error);
   }
@@ -262,14 +276,74 @@ const getAllPharmacies_addSeller = async (req, res) => {
 
 const getPharmacyById = async (req, res) => {
   const { id } = req.params;
+
   try {
-    // const pharmacy = await pharmacyModel.findById(id);
-    // if (!pharmacy) {
-    //   return res
-    //     .status(404)
-    //     .json({ success: false, message: "Pharmacy not found" });
-    // }
-    // res.json({ success: true, pharmacy });
+    const isObjectId = id.length === 24 && /^[0-9a-fA-F]+$/.test(id);
+    const query = isObjectId ? { _id: id } : { pharmacyNumber: Number(id) };
+
+    const pharmacy = await pharmacyModel
+      .findOne(query)
+      .select("-__v -createdAt -updatedAt")
+      .lean();
+
+    if (!pharmacy)
+      return res.status(404).json({
+        success: false,
+        message: "Pharmacy not found",
+      });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const pharmacyNumber = Number(pharmacy.pharmacyNumber);
+
+    const products = await productModel
+      .find({
+        pharmacy_id: pharmacyNumber,
+        "stock_entry.qr_code": { $exists: true, $ne: "" },
+      })
+      .select("name name_id sale_entry")
+      .lean();
+
+    const map = new Map();
+
+    products.forEach((product) => {
+      const key = product.name_id?.toString();
+      if (!key) return;
+
+      if (!map.has(key))
+        map.set(key, {
+          name: product.name,
+          total: 0,
+          sold: 0,
+        });
+
+      const entry = map.get(key);
+
+      entry.total += 1;
+
+      if (product.sale_entry?.qr_code) entry.sold += 1;
+    });
+
+    const productStats = Array.from(map.values());
+
+    const sellers = await sellerModel.countDocuments({
+      location_id: pharmacyNumber,
+      $or: [
+        { "employmentPeriod.endDate": { $gt: today } },
+        { "employmentPeriod.endDate": null },
+        { "employmentPeriod.endDate": { $exists: false } },
+      ],
+    });
+
+    return res.status(200).json({
+      success: true,
+      pharmacy: {
+        ...pharmacy,
+        stats: productStats,
+        sellers,
+      },
+    });
   } catch (error) {
     handleServerError(res, error);
   }

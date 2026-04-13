@@ -4,6 +4,7 @@ import {
   getAllProducts,
   getAllSellers,
   getAllPharmacies,
+  getPharmacyById,
   addSeller,
   getAllPharmacies_addSeller,
   getAllManagers,
@@ -24,6 +25,7 @@ managerRouter.get("/products-add-data", getProductsAddData);
 managerRouter.get("/sellers", getAllSellers);
 managerRouter.post("/seller", addSeller);
 managerRouter.get("/pharmacies", getAllPharmacies);
+managerRouter.get("/pharmacies/:id", getPharmacyById);
 managerRouter.get("/pharmacies-add-seller", getAllPharmacies_addSeller);
 managerRouter.get("/managers", getAllManagers);
 managerRouter.get("/admins", getAllAdmins);
