@@ -49,6 +49,32 @@ function parseEnvArray(envVar) {
   return [];
 }
 
+const uniqueByName = (arr) => {
+  const seen = new Map();
+  arr.forEach((item) => {
+    if (!seen.has(item.name)) {
+      seen.set(item.name, item);
+    }
+  });
+  return Array.from(seen.values());
+};
+
+const formatDate = (date) => {
+  const d = new Date(date);
+
+  const pad = (n) => String(n).padStart(2, "0");
+
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+
+  const hours = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+  const seconds = pad(d.getSeconds());
+
+  return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+};
+
 export {
   handleNodemonRestart,
   handleServerError,
@@ -56,4 +82,6 @@ export {
   getSellersArray,
   isAuthorizedSeller,
   parseEnvArray,
+  uniqueByName,
+  formatDate,
 };

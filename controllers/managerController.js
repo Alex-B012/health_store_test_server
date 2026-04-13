@@ -1,3 +1,4 @@
+import fs from "fs/promises";
 import {
   generateRandomPhone,
   getRandomTelegramId,
@@ -6,8 +7,11 @@ import adminModel from "../models/adminModel.js";
 import managerModel from "../models/managerModel.js";
 import pharmacyModel from "../models/pharmacyModel.js";
 import productModel from "../models/productModel.js";
+import productNameModel from "../models/productNameModel.js";
 import sellerModel from "../models/sellerModel.js";
-import { handleServerError } from "../utils/utils.js";
+import { formatDate, handleServerError, uniqueByName } from "../utils/utils.js";
+import { test_getRandomNumber } from "../utils/tests.js";
+import { warehouse_employees } from "../data/data.js";
 
 // API to get all products for manager view
 const getAllProducts = async (req, res) => {
@@ -62,11 +66,81 @@ const getProductById = async (req, res) => {
 
 const addProducts = async (req, res) => {
   console.log("addProducts - start");
+
   try {
-    const { name, price, pharmacy_id } = req.body;
-    res.status(201).json({
+    const { pharmacy, product, seller, date } = req.body;
+
+    const requiredFields = { pharmacy, product, seller, date };
+
+    const missingFields = Object.entries(requiredFields)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key);
+
+    if (missingFields.length > 0)
+      throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
+
+    const filePath = req.file.path;
+    const fileContent = await fs.readFile(filePath, "utf-8");
+    const parsedData = fileContent
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((code) => ({ code }));
+
+    const productsNames = await productNameModel
+      .find({})
+      .select("_id name")
+      .lean();
+
+    const pharmacies = await pharmacyModel
+      .find({})
+      .select("_id pharmacyNumber")
+      .lean();
+
+    const formattedDate = formatDate(date);
+
+    const documents = parsedData.map((item) => ({
+      name: productsNames.find((p) => p._id.toString() === product)?.name,
+      name_id: product,
+      stock_entry: {
+        qr_code: `${formattedDate}_${item.code}`,
+        date: new Date(date),
+        employee_id: test_getRandomNumber(warehouse_employees) || null,
+      },
+      pharmacy_id: pharmacies.find((ph) => ph._id.toString() === pharmacy)
+        ?.pharmacyNumber,
+      sale_entry: {
+        qr_code: `${formattedDate}_${item.code}`,
+        date: new Date(date),
+        seller_id: seller,
+      },
+    }));
+
+    const invalidDocs = documents.filter((doc) => {
+      return (
+        !doc.name ||
+        !doc.name_id ||
+        !doc.stock_entry?.qr_code ||
+        !doc.sale_entry?.qr_code ||
+        !doc.pharmacy_id ||
+        !doc.sale_entry?.seller_id
+      );
+    });
+
+    if (invalidDocs.length > 0) {
+      console.log("First invalid doc:", invalidDocs[0]);
+
+      throw new Error(
+        `Invalid documents found (${invalidDocs.length}). Example missing fields detected.`,
+      );
+    }
+
+    await productModel.insertMany(documents);
+
+    return res.status(201).json({
       success: true,
       message: "Товары успешно добавлены!",
+      inserted: documents.length,
     });
   } catch (error) {
     handleServerError(res, error);
@@ -83,6 +157,37 @@ const getProductBySellerId = async (req, res) => {
     //     .json({ success: false, message: "Product not found" });
     // }
     // res.json({ success: true, product });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
+const getProductsAddData = async (req, res) => {
+  try {
+    const pharmacies = await pharmacyModel
+      .find({})
+      .select("_id name pharmacyNumber")
+      .sort({ pharmacyNumber: 1 })
+      .lean();
+
+    const sellers = await sellerModel
+      .find({})
+      .select("_id name")
+      .lean()
+      .sort({ "name.surname": 1, "name.name": 1, "name.patronymic": 1 });
+
+    const productsNames = await productNameModel
+      .find({})
+      .select("_id name")
+      .sort({ name: 1 })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      pharmacies: pharmacies,
+      sellers: sellers,
+      productsNames: uniqueByName(productsNames),
+    });
   } catch (error) {
     handleServerError(res, error);
   }
@@ -397,4 +502,6 @@ export {
   getAllPharmacies_addSeller,
   getAllManagers,
   getAllAdmins,
+  getProductsAddData,
+  addProducts,
 };
