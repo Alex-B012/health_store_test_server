@@ -124,9 +124,9 @@ const SELLERS = [
     name: { name: "Алексей", patronymic: "Дмитриевич", surname: "Волков" },
     dob: new Date("1998-07-19"),
     employmentPeriod: {
-      status: "active",
+      status: "non-active",
       startDate: new Date("2020-08-01"),
-      endDate: null,
+      endDate: new Date("2026-04-01"),
     },
     location_id: 15,
     telegram_id: 19283746,
@@ -143,6 +143,18 @@ const SELLERS = [
     location_id: 10,
     telegram_id: 73625184,
     phone: "+79254801936",
+  },
+  {
+    name: { name: "Анастасия", patronymic: "Игоревна", surname: "Морозова" },
+    dob: new Date("2006-07-14"),
+    employmentPeriod: {
+      status: "active",
+      startDate: new Date("2025-05-20"),
+      endDate: null,
+    },
+    location_id: 15,
+    telegram_id: 91827364,
+    phone: "+79161234567",
   },
 ];
 

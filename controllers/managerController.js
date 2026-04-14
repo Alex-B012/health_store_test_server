@@ -369,31 +369,52 @@ const getAllSellers = async (req, res) => {
   try {
     const sellers = await sellerModel
       .find({})
-      .select("-__v -telegram_id")
+      .select("-__v -telegram_id -phone")
       .lean();
 
     const counts = await productModel.aggregate([
       {
         $match: {
-          "sale_entry.seller_id": { $ne: null },
+          "sale_entry.seller_id": { $exists: true, $ne: null },
         },
       },
       {
         $group: {
           _id: "$sale_entry.seller_id",
-          salesCount: { $sum: 1 },
+
+          totalProducts: { $sum: 1 },
+
+          salesCount: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $ifNull: ["$sale_entry.qr_code", false] },
+                    { $ne: ["$sale_entry.qr_code", ""] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
         },
       },
     ]);
 
-    const countMap = {};
+    const countProductsMap = {};
+    const countSalesMap = {};
+
     counts.forEach((c) => {
-      countMap[c._id.toString()] = c.salesCount;
+      const id = c._id.toString();
+      countProductsMap[id] = c.totalProducts;
+      countSalesMap[id] = c.salesCount;
     });
 
     const sellersWithSales = sellers.map((seller) => ({
       ...seller,
-      salesCount: countMap[seller._id.toString()] || 0,
+      totalProducts: countProductsMap[seller._id.toString()] || 0,
+      salesCount: countSalesMap[seller._id.toString()] || 0,
     }));
 
     res.json({ success: true, sellers: sellersWithSales });
