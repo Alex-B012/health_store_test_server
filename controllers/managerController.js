@@ -18,7 +18,25 @@ const getAllProducts = async (req, res) => {
   console.log("getAllProducts - start");
 
   try {
-    const products = await productModel.find({}).select("-__v").lean();
+    // =========================
+    // 1. LAST 100 SOLD PRODUCTS
+    // =========================
+    const products = await productModel
+      .find({
+        "sale_entry.qr_code": {
+          $exists: true,
+          $ne: null,
+          $ne: "",
+        },
+      })
+      .sort({ _id: -1 })
+      .limit(100)
+      .select("-__v")
+      .lean();
+
+    // =========================
+    // 2. SELLER MAP
+    // =========================
     const sellers = await sellerModel.find({}).select("_id name").lean();
 
     const sellerMap = {};
@@ -26,8 +44,12 @@ const getAllProducts = async (req, res) => {
       sellerMap[s._id.toString()] = s.name;
     });
 
+    // =========================
+    // 3. ENRICH PRODUCTS
+    // =========================
     const enrichedProducts = products.map((p) => {
-      const sale = { ...p.sale_entry };
+      const sale = p.sale_entry || {};
+
       return {
         ...p,
         sale_entry: {
@@ -39,8 +61,118 @@ const getAllProducts = async (req, res) => {
       };
     });
 
-    console.log(`getAllProducts - products found: ${enrichedProducts.length}`);
-    res.json({ success: true, products: enrichedProducts });
+    // =========================
+    // 4. GLOBAL STATS
+    // =========================
+    const statsResult = await productModel.aggregate([
+      {
+        $group: {
+          _id: null,
+
+          totalProducts: {
+            $sum: {
+              $cond: [{ $ne: ["$sale_entry.seller_id", null] }, 1, 0],
+            },
+          },
+
+          // ✅ CORRECT sales count
+          salesCount: {
+            $sum: {
+              $cond: [
+                {
+                  $gt: [
+                    {
+                      $strLenCP: {
+                        $ifNull: ["$sale_entry.qr_code", ""],
+                      },
+                    },
+                    0,
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+
+          uniqueSellers: {
+            $addToSet: "$sale_entry.seller_id",
+          },
+
+          uniquePharmacies: {
+            $addToSet: "$pharmacy_id",
+          },
+        },
+      },
+
+      {
+        $project: {
+          _id: 0,
+          totalProducts: 1,
+          salesCount: 1,
+          sellersCount: { $size: "$uniqueSellers" },
+          pharmaciesCount: { $size: "$uniquePharmacies" },
+        },
+      },
+    ]);
+
+    const stats = statsResult[0] || {
+      totalProducts: 0,
+      soldProducts: 0,
+      sellersCount: 0,
+      pharmaciesCount: 0,
+    };
+
+    // =========================
+    // 5. CATEGORY STATS (NEW)
+    // =========================
+    const categoryStats = await productModel.aggregate([
+      {
+        $group: {
+          _id: "$name",
+
+          total: { $sum: 1 },
+
+          sold: {
+            $sum: {
+              $cond: [
+                {
+                  $gt: [
+                    { $strLenCP: { $ifNull: ["$sale_entry.qr_code", ""] } },
+                    0,
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          category: "$_id",
+          total: 1,
+          sold: 1,
+        },
+      },
+      {
+        $sort: { total: -1 },
+      },
+    ]);
+
+    // =========================
+    // 6. RESPONSE
+    // =========================
+    res.json({
+      success: true,
+      products: {
+        products: enrichedProducts,
+        stats,
+        categoryStats,
+      },
+    });
   } catch (error) {
     handleServerError(res, error);
   }
