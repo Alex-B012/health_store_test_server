@@ -18,9 +18,6 @@ const getAllProducts = async (req, res) => {
   console.log("getAllProducts - start");
 
   try {
-    // =========================
-    // 1. LAST 100 SOLD PRODUCTS
-    // =========================
     const products = await productModel
       .find({
         "sale_entry.qr_code": {
@@ -34,9 +31,6 @@ const getAllProducts = async (req, res) => {
       .select("-__v")
       .lean();
 
-    // =========================
-    // 2. SELLER MAP
-    // =========================
     const sellers = await sellerModel.find({}).select("_id name").lean();
 
     const sellerMap = {};
@@ -44,9 +38,6 @@ const getAllProducts = async (req, res) => {
       sellerMap[s._id.toString()] = s.name;
     });
 
-    // =========================
-    // 3. ENRICH PRODUCTS
-    // =========================
     const enrichedProducts = products.map((p) => {
       const sale = p.sale_entry || {};
 
@@ -61,9 +52,6 @@ const getAllProducts = async (req, res) => {
       };
     });
 
-    // =========================
-    // 4. GLOBAL STATS
-    // =========================
     const statsResult = await productModel.aggregate([
       {
         $group: {
@@ -75,7 +63,6 @@ const getAllProducts = async (req, res) => {
             },
           },
 
-          // ✅ CORRECT sales count
           salesCount: {
             $sum: {
               $cond: [
@@ -123,9 +110,6 @@ const getAllProducts = async (req, res) => {
       pharmaciesCount: 0,
     };
 
-    // =========================
-    // 5. CATEGORY STATS (NEW)
-    // =========================
     const categoryStats = await productModel.aggregate([
       {
         $group: {
@@ -162,9 +146,6 @@ const getAllProducts = async (req, res) => {
       },
     ]);
 
-    // =========================
-    // 6. RESPONSE
-    // =========================
     res.json({
       success: true,
       products: {
@@ -181,12 +162,6 @@ const getAllProducts = async (req, res) => {
 const getProductById = async (req, res) => {
   const { id } = req.params;
   try {
-    // const product = await productModel.findById(id);
-    // if (!product) {
-    //   return res
-    //     .status(404)
-    //     .json({ success: false, message: "Product not found" });
-    // }
     // res.json({ success: true, product });
   } catch (error) {
     handleServerError(res, error);
@@ -276,12 +251,6 @@ const addProducts = async (req, res) => {
 const getProductBySellerId = async (req, res) => {
   const { id } = req.params;
   try {
-    // const product = await productModel.findOne({ sellerId: id });
-    // if (!product) {
-    //   return res
-    //     .status(404)
-    //     .json({ success: false, message: "Product not found" });
-    // }
     // res.json({ success: true, product });
   } catch (error) {
     handleServerError(res, error);
@@ -322,12 +291,6 @@ const getProductsAddData = async (req, res) => {
 const getProductByPharmacyId = async (req, res) => {
   const { id } = req.params;
   try {
-    // const product = await productModel.findOne({ pharmacyId: id });
-    // if (!product) {
-    //   return res
-    //     .status(404)
-    //     .json({ success: false, message: "Product not found" });
-    // }
     // res.json({ success: true, product });
   } catch (error) {
     handleServerError(res, error);
@@ -484,12 +447,6 @@ const getPharmacyById = async (req, res) => {
 const getPharmacyBySellerId = async (req, res) => {
   const { id } = req.params;
   try {
-    // const pharmacy = await pharmacyModel.findOne({ sellerId: id });
-    // if (!pharmacy) {
-    //   return res
-    //     .status(404)
-    //     .json({ success: false, message: "Pharmacy not found" });
-    // }
     // res.json({ success: true, pharmacy });
   } catch (error) {
     handleServerError(res, error);
@@ -557,14 +514,108 @@ const getAllSellers = async (req, res) => {
 
 const getSellerById = async (req, res) => {
   const { id } = req.params;
+
   try {
-    // const seller = await sellerModel.findById(id);
-    // if (!seller) {
-    //   return res
-    //     .status(404)
-    //     .json({ success: false, message: "Seller not found" });
-    // }
-    // res.json({ success: true, seller });
+    const seller = await sellerModel.findById(id).select("-__v").lean();
+
+    if (!seller) {
+      return res.status(404).json({
+        success: false,
+        message: "Seller not found",
+      });
+    }
+
+    const stats = await productModel.aggregate([
+      {
+        $match: {
+          "sale_entry.seller_id": id,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+
+          totalProducts: { $sum: 1 },
+
+          salesCount: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $ifNull: ["$sale_entry.qr_code", false] },
+                    { $ne: ["$sale_entry.qr_code", ""] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalProducts: 1,
+          salesCount: 1,
+        },
+      },
+    ]);
+
+    const sellerStats = stats[0] || {
+      totalProducts: 0,
+      salesCount: 0,
+    };
+
+    const categories = await productModel.aggregate([
+      {
+        $match: {
+          "sale_entry.seller_id": id,
+        },
+      },
+      {
+        $group: {
+          _id: "$name",
+
+          total: { $sum: 1 },
+
+          sold: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $ifNull: ["$sale_entry.qr_code", false] },
+                    { $ne: ["$sale_entry.qr_code", ""] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          name: "$_id",
+          total: 1,
+          sold: 1,
+        },
+      },
+      {
+        $sort: { total: -1 },
+      },
+    ]);
+
+    res.json({
+      success: true,
+      seller: {
+        ...seller,
+        ...sellerStats,
+        categories,
+      },
+    });
   } catch (error) {
     handleServerError(res, error);
   }
@@ -597,9 +648,6 @@ const addSeller = async (req, res) => {
     const telegramIds = sellers.map((s) => s.telegram_id);
     const phones = sellers.map((s) => s.phone);
 
-    // ---------------------------
-    // TELEGRAM ID
-    // ---------------------------
     let finalTelegramId;
 
     if (telegram_id) {
@@ -617,9 +665,6 @@ const addSeller = async (req, res) => {
       finalTelegramId = getRandomTelegramId(telegramIds);
     }
 
-    // ---------------------------
-    // PHONE (NEW LOGIC)
-    // ---------------------------
     let finalPhone;
 
     if (phone) {
@@ -641,9 +686,6 @@ const addSeller = async (req, res) => {
       finalPhone = generatedPhone;
     }
 
-    // ---------------------------
-    // CREATE SELLER
-    // ---------------------------
     const seller = await sellerModel.create({
       name,
       dob: dob || null,

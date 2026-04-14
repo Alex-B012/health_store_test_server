@@ -11,6 +11,7 @@ import {
   getAllAdmins,
   getProductsAddData,
   addProducts,
+  getSellerById,
 } from "../controllers/managerController.js";
 import authUser from "../middlewares/authUser.js";
 import { getSellersArray } from "../utils/utils.js";
@@ -23,6 +24,7 @@ managerRouter.get("/products", getAllProducts);
 managerRouter.post("/products", upload.single("file"), addProducts);
 managerRouter.get("/products-add-data", getProductsAddData);
 managerRouter.get("/sellers", getAllSellers);
+managerRouter.get("/sellers/:id", getSellerById);
 managerRouter.post("/seller", addSeller);
 managerRouter.get("/pharmacies", getAllPharmacies);
 managerRouter.get("/pharmacies/:id", getPharmacyById);
