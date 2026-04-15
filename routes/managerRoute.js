@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import {
+  getDashboardData,
   getAllProducts,
   getAllSellers,
   getAllPharmacies,
@@ -20,6 +21,7 @@ const managerRouter = express.Router();
 const upload = multer({ dest: "uploads/" });
 
 // managerRouter.get("/products", authUser(getSellersArray), getAllProducts);
+managerRouter.get("/dashboard", getDashboardData);
 managerRouter.get("/products", getAllProducts);
 managerRouter.post("/products", upload.single("file"), addProducts);
 managerRouter.get("/products-add-data", getProductsAddData);

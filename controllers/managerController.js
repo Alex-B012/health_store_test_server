@@ -13,6 +13,126 @@ import { formatDate, handleServerError, uniqueByName } from "../utils/utils.js";
 import { test_getRandomNumber } from "../utils/tests.js";
 import { warehouse_employees } from "../data/data.js";
 
+// API to get dashboard data for manager view
+
+const getDashboardData = async (req, res) => {
+  console.log("getDashboardData - start");
+
+  try {
+    const [result, pharmacyCount, sellerCount] = await Promise.all([
+      productModel.aggregate([
+        {
+          $facet: {
+            totalProducts: [{ $count: "count" }],
+
+            totalSales: [
+              {
+                $match: {
+                  $and: [
+                    { "sale_entry.qr_code": { $exists: true } },
+                    { "sale_entry.qr_code": { $ne: null } },
+                    { "sale_entry.qr_code": { $ne: "" } },
+                  ],
+                },
+              },
+              { $count: "count" },
+            ],
+
+            salesBySeller: [
+              {
+                $match: {
+                  $and: [
+                    { "sale_entry.seller_id": { $exists: true, $ne: null } },
+                    {
+                      "sale_entry.qr_code": {
+                        $exists: true,
+                        $ne: null,
+                        $ne: "",
+                      },
+                    },
+                  ],
+                },
+              },
+
+              {
+                $group: {
+                  _id: "$sale_entry.seller_id",
+                  salesCount: { $sum: 1 },
+                },
+              },
+
+              {
+                $addFields: {
+                  sellerObjectId: {
+                    $cond: [
+                      { $eq: [{ $type: "$_id" }, "string"] },
+                      { $toObjectId: "$_id" },
+                      "$_id",
+                    ],
+                  },
+                },
+              },
+
+              {
+                $lookup: {
+                  from: "sellers",
+                  localField: "sellerObjectId",
+                  foreignField: "_id",
+                  as: "seller",
+                },
+              },
+
+              {
+                $unwind: {
+                  path: "$seller",
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+
+              // normalize output
+              {
+                $project: {
+                  _id: 1,
+                  salesCount: 1,
+                  name: {
+                    $ifNull: ["$seller.name", "Unknown Seller"],
+                  },
+                },
+              },
+
+              {
+                $sort: { salesCount: -1 },
+              },
+            ],
+          },
+        },
+      ]),
+
+      pharmacyModel.countDocuments(),
+      sellerModel.countDocuments(),
+    ]);
+
+    const totalProducts = result?.[0]?.totalProducts?.[0]?.count || 0;
+    const totalSales = result?.[0]?.totalSales?.[0]?.count || 0;
+    const salesBySeller = result?.[0]?.salesBySeller || [];
+
+    res.json({
+      success: true,
+      data: {
+        totals: {
+          totalProducts,
+          totalSales,
+          pharmacyCount,
+          sellerCount,
+        },
+        salesBySeller,
+      },
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
 // API to get all products for manager view
 const getAllProducts = async (req, res) => {
   console.log("getAllProducts - start");
@@ -756,4 +876,5 @@ export {
   getAllAdmins,
   getProductsAddData,
   addProducts,
+  getDashboardData,
 };
