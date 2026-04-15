@@ -104,6 +104,60 @@ const getDashboardData = async (req, res) => {
                 $sort: { salesCount: -1 },
               },
             ],
+
+            salesByPharmacy: [
+              {
+                $match: {
+                  $and: [
+                    { pharmacy_id: { $exists: true, $ne: null } },
+                    {
+                      "sale_entry.qr_code": {
+                        $exists: true,
+                        $ne: null,
+                        $ne: "",
+                      },
+                    },
+                  ],
+                },
+              },
+
+              {
+                $group: {
+                  _id: "$pharmacy_id",
+                  productsSold: { $sum: 1 },
+                },
+              },
+
+              {
+                $lookup: {
+                  from: "pharmacies",
+                  localField: "_id",
+                  foreignField: "pharmacyNumber",
+                  as: "pharmacy",
+                },
+              },
+
+              {
+                $unwind: {
+                  path: "$pharmacy",
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+
+              {
+                $project: {
+                  _id: 1,
+                  productsSold: 1,
+                  pharmacyName: {
+                    $ifNull: ["$pharmacy.name", "Unknown Pharmacy"],
+                  },
+                },
+              },
+
+              {
+                $sort: { productsSold: -1 },
+              },
+            ],
           },
         },
       ]),
@@ -115,6 +169,9 @@ const getDashboardData = async (req, res) => {
     const totalProducts = result?.[0]?.totalProducts?.[0]?.count || 0;
     const totalSales = result?.[0]?.totalSales?.[0]?.count || 0;
     const salesBySeller = result?.[0]?.salesBySeller || [];
+    const salesByPharmacy = result?.[0]?.salesByPharmacy || [];
+
+    console.log("salesByPharmacy:", salesByPharmacy);
 
     res.json({
       success: true,
@@ -126,6 +183,7 @@ const getDashboardData = async (req, res) => {
           sellerCount,
         },
         salesBySeller,
+        salesByPharmacy,
       },
     });
   } catch (error) {
