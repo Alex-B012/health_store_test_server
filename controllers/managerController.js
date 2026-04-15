@@ -172,9 +172,9 @@ const addProducts = async (req, res) => {
   console.log("addProducts - start");
 
   try {
-    const { pharmacy, product, seller, date } = req.body;
+    const { pharmacy, product, date } = req.body;
 
-    const requiredFields = { pharmacy, product, seller, date };
+    const requiredFields = { pharmacy, product, date };
 
     const missingFields = Object.entries(requiredFields)
       .filter(([_, value]) => !value)
@@ -213,9 +213,6 @@ const addProducts = async (req, res) => {
       },
       pharmacy_id: pharmacies.find((ph) => ph._id.toString() === pharmacy)
         ?.pharmacyNumber,
-      sale_entry: {
-        seller_id: seller,
-      },
     }));
 
     const invalidDocs = documents.filter((doc) => {
@@ -223,8 +220,7 @@ const addProducts = async (req, res) => {
         !doc.name ||
         !doc.name_id ||
         !doc.stock_entry?.qr_code ||
-        !doc.pharmacy_id ||
-        !doc.sale_entry?.seller_id
+        !doc.pharmacy_id
       );
     });
 
@@ -265,12 +261,6 @@ const getProductsAddData = async (req, res) => {
       .sort({ pharmacyNumber: 1 })
       .lean();
 
-    const sellers = await sellerModel
-      .find({})
-      .select("_id name")
-      .lean()
-      .sort({ "name.surname": 1, "name.name": 1, "name.patronymic": 1 });
-
     const productsNames = await productNameModel
       .find({})
       .select("_id name")
@@ -280,7 +270,6 @@ const getProductsAddData = async (req, res) => {
     res.status(200).json({
       success: true,
       pharmacies: pharmacies,
-      sellers: sellers,
       productsNames: uniqueByName(productsNames),
     });
   } catch (error) {
@@ -455,58 +444,58 @@ const getPharmacyBySellerId = async (req, res) => {
 
 const getAllSellers = async (req, res) => {
   console.log("getAllSellers - start");
+
   try {
-    const sellers = await sellerModel
-      .find({})
-      .select("-__v -telegram_id -phone")
-      .lean();
-
-    const counts = await productModel.aggregate([
-      {
-        $match: {
-          "sale_entry.seller_id": { $exists: true, $ne: null },
+    const [sellers, pharmacyCount, totalProducts, counts] = await Promise.all([
+      sellerModel.find({}).select("-__v -telegram_id -phone").lean(),
+      pharmacyModel.countDocuments(),
+      productModel.countDocuments(),
+      productModel.aggregate([
+        {
+          $match: {
+            "sale_entry.seller_id": { $exists: true, $ne: null },
+          },
         },
-      },
-      {
-        $group: {
-          _id: "$sale_entry.seller_id",
-
-          totalProducts: { $sum: 1 },
-
-          salesCount: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [
-                    { $ifNull: ["$sale_entry.qr_code", false] },
-                    { $ne: ["$sale_entry.qr_code", ""] },
-                  ],
-                },
-                1,
-                0,
-              ],
+        {
+          $group: {
+            _id: "$sale_entry.seller_id",
+            salesCount: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $ifNull: ["$sale_entry.qr_code", false] },
+                      { $ne: ["$sale_entry.qr_code", ""] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
             },
           },
         },
-      },
+      ]),
     ]);
 
-    const countProductsMap = {};
-    const countSalesMap = {};
+    const countSalesMap = new Map();
 
     counts.forEach((c) => {
-      const id = c._id.toString();
-      countProductsMap[id] = c.totalProducts;
-      countSalesMap[id] = c.salesCount;
+      countSalesMap.set(c._id.toString(), c.salesCount);
     });
 
     const sellersWithSales = sellers.map((seller) => ({
       ...seller,
-      totalProducts: countProductsMap[seller._id.toString()] || 0,
-      salesCount: countSalesMap[seller._id.toString()] || 0,
+      salesCount: countSalesMap.get(seller._id.toString()) || 0,
     }));
 
-    res.json({ success: true, sellers: sellersWithSales });
+    res.json({
+      success: true,
+      sellers: sellersWithSales,
+      sellersNumber: sellers.length,
+      pharmacyCount,
+      totalProducts,
+    });
   } catch (error) {
     handleServerError(res, error);
   }
