@@ -860,15 +860,12 @@ const getSellerById = async (req, res) => {
       });
     }
 
-    const pharmacyName =
-      (
-        await pharmacyModel
-          .findOne({ pharmacyNumber: seller.location_id })
-          .select("name -_id")
-          .lean()
-      )?.name || null;
+    const pharmacyQuery = pharmacyModel
+      .findOne({ pharmacyNumber: seller.location_id })
+      .select("name -_id")
+      .lean();
 
-    const stats = await productModel.aggregate([
+    const statsQuery = productModel.aggregate([
       {
         $match: {
           pharmacy_id: seller.location_id,
@@ -877,9 +874,7 @@ const getSellerById = async (req, res) => {
       {
         $group: {
           _id: null,
-
           totalProducts: { $sum: 1 },
-
           salesCount: {
             $sum: {
               $cond: [
@@ -906,12 +901,7 @@ const getSellerById = async (req, res) => {
       },
     ]);
 
-    const sellerStats = stats[0] || {
-      totalProducts: 0,
-      salesCount: 0,
-    };
-
-    const categories = await productModel.aggregate([
+    const categoriesQuery = productModel.aggregate([
       {
         $match: {
           pharmacy_id: seller.location_id,
@@ -919,10 +909,8 @@ const getSellerById = async (req, res) => {
       },
       {
         $group: {
-          _id: "$name",
-
+          _id: "$name_id",
           total: { $sum: 1 },
-
           sold: {
             $sum: {
               $cond: [
@@ -941,23 +929,64 @@ const getSellerById = async (req, res) => {
         },
       },
       {
-        $project: {
-          _id: 0,
-          name: "$_id",
-          total: 1,
-          sold: 1,
+        $addFields: {
+          soldPercent: {
+            $cond: [
+              { $eq: ["$total", 0] },
+              0,
+              { $divide: ["$sold", "$total"] },
+            ],
+          },
         },
       },
       {
-        $sort: { total: -1 },
+        $lookup: {
+          from: "productnames",
+          localField: "_id",
+          foreignField: "_id",
+          as: "productName",
+        },
+      },
+      {
+        $unwind: {
+          path: "$productName",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: "$productName.name",
+          total: 1,
+          sold: 1,
+          soldPercent: 1,
+        },
+      },
+      {
+        $sort: {
+          soldPercent: -1,
+          sold: -1,
+          total: -1,
+        },
       },
     ]);
+
+    const [pharmacy, stats, categories] = await Promise.all([
+      pharmacyQuery,
+      statsQuery,
+      categoriesQuery,
+    ]);
+
+    const sellerStats = stats[0] || {
+      totalProducts: 0,
+      salesCount: 0,
+    };
 
     res.json({
       success: true,
       seller: {
         ...seller,
-        pharmacy_name: pharmacyName,
+        pharmacy_name: pharmacy?.name || null,
         ...sellerStats,
         categories,
       },
