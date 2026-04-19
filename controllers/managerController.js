@@ -422,6 +422,108 @@ const getProductById = async (req, res) => {
       },
     ]);
 
+    const sellerStats = await productModel.aggregate([
+      {
+        $match: {
+          name_id: new mongoose.Types.ObjectId(id),
+          "sale_entry.seller_id": { $ne: null },
+        },
+      },
+
+      // 🔥 convert string → ObjectId
+      {
+        $addFields: {
+          seller_id_obj: {
+            $toObjectId: "$sale_entry.seller_id",
+          },
+        },
+      },
+
+      {
+        $group: {
+          _id: "$seller_id_obj",
+
+          totalSales: {
+            $sum: {
+              $cond: [
+                {
+                  $gt: [
+                    { $strLenCP: { $ifNull: ["$sale_entry.qr_code", ""] } },
+                    0,
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+
+      // 🔍 correct lookup
+      {
+        $lookup: {
+          from: "sellers",
+          localField: "_id",
+          foreignField: "_id",
+          as: "seller",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$seller",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // 🔍 pharmacy
+      {
+        $lookup: {
+          from: "pharmacies",
+          localField: "seller.location_id",
+          foreignField: "pharmacyNumber",
+          as: "pharmacy",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$pharmacy",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // 🧼 safe output
+      {
+        $project: {
+          _id: 0,
+
+          seller_id: "$_id",
+
+          sellerName: {
+            $concat: [
+              { $ifNull: ["$seller.name.surname", ""] },
+              " ",
+              { $ifNull: ["$seller.name.name", ""] },
+            ],
+          },
+
+          pharmacy: {
+            _id: "$pharmacy._id",
+            name: "$pharmacy.name",
+            pharmacyNumber: "$pharmacy.pharmacyNumber",
+          },
+
+          totalSales: 1,
+        },
+      },
+
+      {
+        $sort: { totalSales: -1 },
+      },
+    ]);
+
     const result = stats[0] || {
       name_id: id,
       total: 0,
@@ -440,6 +542,7 @@ const getProductById = async (req, res) => {
           sold: result.sold,
         },
         pharmacies: pharmacyStats,
+        sellers: sellerStats,
       },
     });
   } catch (error) {
