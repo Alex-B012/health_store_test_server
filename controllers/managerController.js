@@ -702,6 +702,7 @@ const getAllPharmacies_addSeller = async (req, res) => {
 };
 
 const getPharmacyById = async (req, res) => {
+  console.log("getPharmacyById - start");
   const { id } = req.params;
 
   try {
@@ -724,13 +725,24 @@ const getPharmacyById = async (req, res) => {
 
     const pharmacyNumber = Number(pharmacy.pharmacyNumber);
 
-    const products = await productModel
-      .find({
-        pharmacy_id: pharmacyNumber,
-        "stock_entry.qr_code": { $exists: true, $ne: "" },
-      })
-      .select("name name_id sale_entry")
-      .lean();
+    const [products, sellers] = await Promise.all([
+      productModel
+        .find({
+          pharmacy_id: pharmacyNumber,
+          "stock_entry.qr_code": { $exists: true, $ne: "" },
+        })
+        .select("name name_id sale_entry")
+        .lean(),
+
+      sellerModel.countDocuments({
+        location_id: pharmacyNumber,
+        $or: [
+          { "employmentPeriod.endDate": { $gt: today } },
+          { "employmentPeriod.endDate": null },
+          { "employmentPeriod.endDate": { $exists: false } },
+        ],
+      }),
+    ]);
 
     const map = new Map();
 
@@ -740,28 +752,19 @@ const getPharmacyById = async (req, res) => {
 
       if (!map.has(key))
         map.set(key, {
+          _id: product.name_id,
           name: product.name,
           total: 0,
           sold: 0,
         });
 
       const entry = map.get(key);
-
       entry.total += 1;
 
       if (product.sale_entry?.qr_code) entry.sold += 1;
     });
 
     const productStats = Array.from(map.values());
-
-    const sellers = await sellerModel.countDocuments({
-      location_id: pharmacyNumber,
-      $or: [
-        { "employmentPeriod.endDate": { $gt: today } },
-        { "employmentPeriod.endDate": null },
-        { "employmentPeriod.endDate": { $exists: false } },
-      ],
-    });
 
     return res.status(200).json({
       success: true,
