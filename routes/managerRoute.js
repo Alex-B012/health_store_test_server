@@ -3,6 +3,7 @@ import multer from "multer";
 import {
   getDashboardData,
   getAllProducts,
+  getProductById,
   getAllSellers,
   getAllPharmacies,
   getPharmacyById,
@@ -23,6 +24,7 @@ const upload = multer({ dest: "uploads/" });
 // managerRouter.get("/products", authUser(getSellersArray), getAllProducts);
 managerRouter.get("/dashboard", getDashboardData);
 managerRouter.get("/products", getAllProducts);
+managerRouter.get("/products/:id", getProductById);
 managerRouter.post("/products", upload.single("file"), addProducts);
 managerRouter.get("/products-add-data", getProductsAddData);
 managerRouter.get("/sellers", getAllSellers);

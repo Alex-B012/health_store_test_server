@@ -1,14 +1,17 @@
 import fs from "fs/promises";
-import {
-  generateRandomPhone,
-  getRandomTelegramId,
-} from "../db_service/db_utils.js";
+import mongoose from "mongoose";
+
 import adminModel from "../models/adminModel.js";
 import managerModel from "../models/managerModel.js";
 import pharmacyModel from "../models/pharmacyModel.js";
 import productModel from "../models/productModel.js";
 import productNameModel from "../models/productNameModel.js";
 import sellerModel from "../models/sellerModel.js";
+
+import {
+  generateRandomPhone,
+  getRandomTelegramId,
+} from "../db_service/db_utils.js";
 import { formatDate, handleServerError, uniqueByName } from "../utils/utils.js";
 import { test_getRandomNumber } from "../utils/tests.js";
 import { warehouse_employees } from "../data/data.js";
@@ -134,8 +137,6 @@ const getDashboardData = async (req, res) => {
     const salesBySeller = productStats[0]?.salesBySeller || [];
     const salesByPharmacyData = salesByPharmacy || [];
 
-    console.log("salesByPharmacy count:", salesByPharmacyData.length);
-
     res.json({
       success: true,
       data: {
@@ -254,8 +255,8 @@ const getAllProducts = async (req, res) => {
     const categoryStats = await productModel.aggregate([
       {
         $group: {
-          _id: "$name",
-
+          _id: "$name_id",
+          name: { $first: "$name" },
           total: { $sum: 1 },
 
           sold: {
@@ -276,8 +277,8 @@ const getAllProducts = async (req, res) => {
       },
       {
         $project: {
-          _id: 0,
-          category: "$_id",
+          _id: 1,
+          category: "$name",
           total: 1,
           sold: 1,
         },
@@ -300,10 +301,147 @@ const getAllProducts = async (req, res) => {
   }
 };
 
+// API to get product by id for manager view
 const getProductById = async (req, res) => {
   const { id } = req.params;
+
   try {
-    // res.json({ success: true, product });
+    if (!mongoose.Types.ObjectId.isValid(id))
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product name id",
+      });
+
+    const productName = await productNameModel.findById(id).lean();
+
+    if (!productName)
+      return res.status(404).json({
+        success: false,
+        message: "Product name not found",
+      });
+
+    const stats = await productModel.aggregate([
+      {
+        $match: {
+          name_id: new mongoose.Types.ObjectId(id),
+        },
+      },
+      {
+        $group: {
+          _id: "$name_id",
+
+          total: { $sum: 1 },
+
+          sold: {
+            $sum: {
+              $cond: [
+                {
+                  $gt: [
+                    { $strLenCP: { $ifNull: ["$sale_entry.qr_code", ""] } },
+                    0,
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          name_id: "$_id",
+          total: 1,
+          sold: 1,
+        },
+      },
+    ]);
+
+    const pharmacyStats = await productModel.aggregate([
+      {
+        $match: {
+          name_id: new mongoose.Types.ObjectId(id),
+          pharmacy_id: { $ne: null },
+        },
+      },
+
+      {
+        $group: {
+          _id: "$pharmacy_id",
+          total: { $sum: 1 },
+
+          sold: {
+            $sum: {
+              $cond: [
+                {
+                  $gt: [
+                    {
+                      $strLenCP: {
+                        $ifNull: ["$sale_entry.qr_code", ""],
+                      },
+                    },
+                    0,
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+
+      {
+        $lookup: {
+          from: "pharmacies",
+          localField: "_id",
+          foreignField: "pharmacyNumber",
+          as: "pharmacy",
+        },
+      },
+      {
+        $unwind: {
+          path: "$pharmacy",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          pharmacy_id: "$_id",
+          pharmacyName: "$pharmacy.name",
+          pharmacyNumber: "$pharmacy.pharmacyNumber",
+          total: 1,
+          sold: 1,
+        },
+      },
+
+      {
+        $sort: { total: -1 },
+      },
+    ]);
+
+    const result = stats[0] || {
+      name_id: id,
+      total: 0,
+      sold: 0,
+    };
+
+    return res.json({
+      success: true,
+      product: {
+        id: productName._id,
+        name: productName.name,
+        brief_description: productName.brief_description || null,
+        description: productName.description || null,
+        stats: {
+          total: result.total,
+          sold: result.sold,
+        },
+        pharmacies: pharmacyStats,
+      },
+    });
   } catch (error) {
     handleServerError(res, error);
   }
@@ -314,7 +452,6 @@ const addProducts = async (req, res) => {
 
   try {
     const { pharmacy, product, date } = req.body;
-
     const requiredFields = { pharmacy, product, date };
 
     const missingFields = Object.entries(requiredFields)
@@ -655,10 +792,18 @@ const getSellerById = async (req, res) => {
       });
     }
 
+    const pharmacyName =
+      (
+        await pharmacyModel
+          .findOne({ pharmacyNumber: seller.location_id })
+          .select("name -_id")
+          .lean()
+      )?.name || null;
+
     const stats = await productModel.aggregate([
       {
         $match: {
-          "sale_entry.seller_id": id,
+          pharmacy_id: seller.location_id,
         },
       },
       {
@@ -672,6 +817,7 @@ const getSellerById = async (req, res) => {
               $cond: [
                 {
                   $and: [
+                    { $eq: ["$sale_entry.seller_id", id] },
                     { $ifNull: ["$sale_entry.qr_code", false] },
                     { $ne: ["$sale_entry.qr_code", ""] },
                   ],
@@ -700,7 +846,7 @@ const getSellerById = async (req, res) => {
     const categories = await productModel.aggregate([
       {
         $match: {
-          "sale_entry.seller_id": id,
+          pharmacy_id: seller.location_id,
         },
       },
       {
@@ -714,6 +860,7 @@ const getSellerById = async (req, res) => {
               $cond: [
                 {
                   $and: [
+                    { $eq: ["$sale_entry.seller_id", id] },
                     { $ifNull: ["$sale_entry.qr_code", false] },
                     { $ne: ["$sale_entry.qr_code", ""] },
                   ],
@@ -742,6 +889,7 @@ const getSellerById = async (req, res) => {
       success: true,
       seller: {
         ...seller,
+        pharmacy_name: pharmacyName,
         ...sellerStats,
         categories,
       },
