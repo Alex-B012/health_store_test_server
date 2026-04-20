@@ -17,7 +17,6 @@ import { test_getRandomNumber } from "../utils/tests.js";
 import { warehouse_employees } from "../data/data.js";
 
 // API to get dashboard data for manager view
-
 const getDashboardData = async (req, res) => {
   console.log("getDashboardData - start");
 
