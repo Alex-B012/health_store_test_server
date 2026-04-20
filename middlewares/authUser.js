@@ -58,19 +58,19 @@ const authUser = (getSellersArray) => {
           .json({ success: false, message: "Unauthorized: invalid API key" });
       }
 
-      // try {
-      //   const verifiedData = verifyTelegramInitData(
-      //     telegramInitData,
-      //     process.env.TELEGRAM_BOT_TOKEN,
-      //   );
-      //   req.telegramUserId = Number(verifiedData.user.id);
-      // } catch (error) {
-      //   console.error("Error verifying Telegram initData:", error);
-      //   return res.status(403).json({
-      //     success: false,
-      //     message: "Unauthorized: invalid Telegram data",
-      //   });
-      // }
+      try {
+        const verifiedData = verifyTelegramInitData(
+          telegramInitData,
+          process.env.TELEGRAM_BOT_TOKEN,
+        );
+        req.telegramUserId = Number(verifiedData.user.id);
+      } catch (error) {
+        console.error("Error verifying Telegram initData:", error);
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized: invalid Telegram data",
+        });
+      }
 
       next();
     } catch (error) {

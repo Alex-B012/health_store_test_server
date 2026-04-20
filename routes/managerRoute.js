@@ -17,12 +17,13 @@ import {
 } from "../controllers/managerController.js";
 import authUser from "../middlewares/authUser.js";
 import { getSellersArray } from "../utils/utils.js";
+import telegramAuth from "../bot/telegramAuth.js";
 
 const managerRouter = express.Router();
 const upload = multer({ dest: "uploads/" });
 
 // managerRouter.get("/products", authUser(getSellersArray), getAllProducts);
-managerRouter.get("/dashboard", getDashboardData);
+managerRouter.get("/dashboard", telegramAuth, getDashboardData);
 managerRouter.get("/products", getAllProducts);
 managerRouter.get("/products/:id", getProductById);
 managerRouter.post("/products", upload.single("file"), addProducts);
