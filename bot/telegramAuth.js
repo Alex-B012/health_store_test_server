@@ -1,9 +1,7 @@
-// const crypto = require("crypto");
 import crypto from "crypto";
 import sellerModel from "../models/sellerModel.js";
 import adminModel from "../models/adminModel.js";
 import managerModel from "../models/managerModel.js";
-// const Roles = require("../models/roles.js");
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -31,7 +29,6 @@ function verifyTelegramInitData(initData) {
 
   if (calculatedHash !== hash) return null;
 
-  // Optional: auth_date freshness check
   const authDate = Number(params.get("auth_date"));
   if (Date.now() / 1000 - authDate > 86400) return null;
 
@@ -42,6 +39,7 @@ function verifyTelegramInitData(initData) {
 
 // Middleware factory (permission-aware)
 function telegramAuth() {
+  console.log("telegramAuth - start");
   return async (req, res, next) => {
     const initData = req.headers.authorization;
     console.log("initData:", initData);
@@ -67,6 +65,7 @@ function telegramAuth() {
     if (!role_seller && !role_admin && !role_manager)
       return res.status(403).json({ error: "No permissions assigned" });
 
+    req.telegramUser = verified.user;
     req.permission_role = role_admin
       ? "admin"
       : role_seller

@@ -15,7 +15,9 @@ const scanProduct = async (req, res) => {
   console.log("scanProduct - start:");
   try {
     const { scannerData } = req.body;
+    const { telegramUser } = req;
 
+    console.log("telegramUser", telegramUser);
     console.log("scannerData - received:", scannerData);
 
     const qr_code = test_generateQrCode(scannerData.text);

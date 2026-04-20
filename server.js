@@ -78,10 +78,10 @@ bot.setWebHook(`${SERVER_URL}/bot${TOKEN}`);
 //   next();
 // });
 
-app.use((req, res, next) => {
-  console.log("🔥 Incoming request:", req.method, req.url);
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log("🔥 Incoming request:", req.method, req.url);
+//   next();
+// });
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -104,9 +104,7 @@ app.use((req, res, next) => {
   }
 
   // Handle preflight FIRST
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
+  if (req.method === "OPTIONS") return res.sendStatus(204);
 
   next();
 });
