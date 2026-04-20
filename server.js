@@ -78,25 +78,32 @@ bot.setWebHook(`${SERVER_URL}/bot${TOKEN}`);
 //   next();
 // });
 
-// app.use(cors({}));
+app.use((req, res, next) => {
+  console.log("🔥 Incoming request:", req.method, req.url);
+  next();
+});
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   console.log("Request origin:", origin);
 
-  if (allowedOrigins.includes(origin)) {
+  // Always set these
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, x-api-key",
+  );
+
+  // Handle allowed origins
+  if (
+    origin &&
+    (allowedOrigins.includes(origin) || origin.endsWith(".ngrok-free.dev"))
+  ) {
     res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader(
-      "Access-Control-Allow-Methods",
-      "GET,POST,PUT,DELETE,OPTIONS",
-    );
-    res.setHeader(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, x-api-key",
-    );
     res.setHeader("Access-Control-Allow-Credentials", "true");
   }
 
+  // Handle preflight FIRST
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
   }
@@ -104,6 +111,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(cors({}));
 // --- Middleware ---
 app.use(loggingMiddleware);
 // app.use(tokenVerificationMiddleware(API_KEY));
@@ -141,7 +149,7 @@ bot.on("message", (msg) => {
     text,
     "\n",
     `userId=${userId}:`,
-    userId,
+    // userId,
   );
 
   if (text === "/start") {
@@ -152,18 +160,18 @@ bot.on("message", (msg) => {
 
     const chatIdsArray = parseEnvArray(CHAT_IDS);
 
-    console.log(
-      "chatId:",
-      `'${chatId.toString()}' (type: ${typeof chatId.toString()})`,
-    );
-    chatIdsArray.forEach((id, index) => {
-      console.log(`Element ${index}: '${id}' (type: ${typeof id})`);
-    });
+    // console.log(
+    //   "chatId:",
+    //   `'${chatId.toString()}' (type: ${typeof chatId.toString()})`,
+    // );
+    // chatIdsArray.forEach((id, index) => {
+    //   console.log(`Element ${index}: '${id}' (type: ${typeof id})`);
+    // });
 
-    console.log("Type:", typeof parseEnvArray(CHAT_IDS));
-    console.log("parseEnvArray(CHAT_IDS)", parseEnvArray(CHAT_IDS));
+    // console.log("Type:", typeof parseEnvArray(CHAT_IDS));
+    // console.log("parseEnvArray(CHAT_IDS)", parseEnvArray(CHAT_IDS));
 
-    console.log("isAllowedChat:", isAllowedChat);
+    // console.log("isAllowedChat:", isAllowedChat);
 
     console.log(
       "isAuthorized - ",

@@ -1,12 +1,16 @@
 import express from "express";
 import { scanProduct } from "../controllers/scannerController.js";
-import authUser from "../middlewares/authUser.js";
 import telegramAuth from "../bot/telegramAuth.js";
-// import { getSellersArray } from "../utils/utils.js";
+import { requireRole } from "../middlewares/authUser.js";
 
 const scannerRouter = express.Router();
 
-// scannerRouter.post("/product", authUser(getSellersArray), scanProduct);
-scannerRouter.post("/product", scanProduct);
+scannerRouter.post(
+  "/product",
+  telegramAuth(),
+  requireRole(["seller", "admin"]),
+  scanProduct,
+);
+// scannerRouter.post("/product", scanProduct);
 
 export default scannerRouter;

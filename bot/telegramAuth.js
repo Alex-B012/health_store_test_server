@@ -1,5 +1,8 @@
 // const crypto = require("crypto");
 import crypto from "crypto";
+import sellerModel from "../models/sellerModel.js";
+import adminModel from "../models/adminModel.js";
+import managerModel from "../models/managerModel.js";
 // const Roles = require("../models/roles.js");
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -38,9 +41,10 @@ function verifyTelegramInitData(initData) {
 }
 
 // Middleware factory (permission-aware)
-function telegramAuth(allowedRoles) {
+function telegramAuth() {
   return async (req, res, next) => {
     const initData = req.headers.authorization;
+    console.log("initData:", initData);
 
     if (!initData)
       return res.status(401).json({ error: "Missing Authorization header" });
@@ -49,25 +53,25 @@ function telegramAuth(allowedRoles) {
     if (!verified)
       return res.status(403).json({ error: "Invalid Telegram init data" });
 
-    const telegramId = String(verified.user.id);
+    const telegram_id = String(verified.user.id);
 
-    console.log("telegramId:", telegramId);
+    console.log("telegramId:", telegram_id);
 
-    // Load permissions from DB
-    const role = await Roles.findOne({ telegramId });
+    const role_seller = await sellerModel.findOne({ telegram_id });
+    const role_admin = await adminModel.findOne({ admin_id: telegram_id });
+    let role_manager = null;
 
-    if (!role)
+    if (!role_seller && !role_admin)
+      role_manager = await managerModel.findOne({ telegram_id });
+
+    if (!role_seller && !role_admin && !role_manager)
       return res.status(403).json({ error: "No permissions assigned" });
 
-    //     if (allowedRoles.includes(role.type)) {
-    //       return res.status(403).json({
-    //         error: `Not allowed`,
-    //       });
-    //     }
-
-    // Attach useful data
-    req.telegramUser = verified.user;
-    //     req.permissions = record.permissions;
+    req.permission_role = role_admin
+      ? "admin"
+      : role_seller
+        ? "seller"
+        : "manager";
 
     next();
   };
