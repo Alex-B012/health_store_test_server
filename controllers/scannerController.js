@@ -13,42 +13,61 @@ const EXCLUDED_DATA = "-__v -date -createdAt -updatedAt";
 
 const scanProduct = async (req, res) => {
   console.log("scanProduct - start:");
+
   try {
     const { scannerData } = req.body;
     const { telegramUser } = req;
 
     console.log("telegramUser", telegramUser);
+    console.log("telegramUser id", telegramUser.telegram_id);
     console.log("scannerData - received:", scannerData);
 
     const qr_code = test_generateQrCode(scannerData.text);
 
-    const createProductForTest = async () => {
-      return {
-        name: test_generateProductName() || "Unnamed Product",
-        stock_entry: {
-          qr_code: qr_code || null,
-          date: test_getRandomStockDate() || null,
-          employee_id: test_getRandomNumber(warehouse_employees) || null,
-        },
-        pharmacy_id: test_getRandomNumber(pharmacies_codes) || null,
-        sale_entry: {
-          qr_code: qr_code || null,
-          date: scannerData.date ? new Date(scannerData.date) : new Date(),
-          seller_id: (await test_getRandomSellerId()) || null,
-        },
-      };
+    if (!qr_code)
+      return res.status(400).json({
+        success: false,
+        message: "Invalid QR code",
+      });
+
+    const product = await productModel.findOne({
+      "stock_entry.qr_code": qr_code,
+    });
+
+    if (!product)
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+
+    if (product.sale_entry && product.sale_entry.date) {
+      await issueLogModel.create({
+        date: new Date(),
+        product_id: product._id,
+        telegram_id: telegramUser.telegram_id,
+      });
+
+      return res.status(409).json({
+        success: false,
+        message: "QR code already assigned to this product",
+      });
+    }
+
+    const saleEntry = {
+      date: scannerData.date ? new Date(scannerData.date) : new Date(),
+      seller_id: telegramUser.telegram_id,
     };
 
-    const productData = await createProductForTest();
+    product.sale_entry = saleEntry;
+    await product.save();
 
-    const newProduct = new productModel(productData);
-    await newProduct.save();
+    console.log("Sale entry added to product:", product._id);
 
-    console.log(
-      "Scanner data saved to database (mocked) - logic to be implemented",
-    );
-
-    res.json({ success: true, message: "Scanner data delivered" });
+    return res.json({
+      success: true,
+      message: "Sale entry recorded",
+      data: product,
+    });
   } catch (error) {
     handleServerError(res, error);
   }
