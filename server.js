@@ -87,12 +87,11 @@ app.use((req, res, next) => {
   const origin = req.headers.origin;
   console.log("Request origin:", origin);
 
+  const allowedHeaders = ["Content-Type", "Authorization", "x-api-key"];
+
   // Always set these
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, x-api-key",
-  );
+  res.setHeader("Access-Control-Allow-Headers", allowedHeaders.join(", "));
 
   // Handle allowed origins
   if (
@@ -109,7 +108,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cors({}));
+// app.use(cors({}));
 // --- Middleware ---
 app.use(loggingMiddleware);
 // app.use(tokenVerificationMiddleware(API_KEY));

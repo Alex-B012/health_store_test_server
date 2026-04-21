@@ -713,11 +713,12 @@ const getPharmacyById = async (req, res) => {
       .select("-__v -createdAt -updatedAt")
       .lean();
 
-    if (!pharmacy)
+    if (!pharmacy) {
       return res.status(404).json({
         success: false,
         message: "Pharmacy not found",
       });
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -733,44 +734,74 @@ const getPharmacyById = async (req, res) => {
         .select("name name_id sale_entry")
         .lean(),
 
-      sellerModel.countDocuments({
-        location_id: pharmacyNumber,
-        $or: [
-          { "employmentPeriod.endDate": { $gt: today } },
-          { "employmentPeriod.endDate": null },
-          { "employmentPeriod.endDate": { $exists: false } },
-        ],
-      }),
+      sellerModel
+        .find({
+          location_id: pharmacyNumber,
+          $or: [
+            { "employmentPeriod.endDate": { $gt: today } },
+            { "employmentPeriod.endDate": null },
+            { "employmentPeriod.endDate": { $exists: false } },
+          ],
+        })
+        .select("-__v -createdAt -updatedAt")
+        .lean(),
     ]);
 
-    const map = new Map();
+    const productMap = new Map();
+    const sellerSalesMap = new Map();
+
+    // console.log("products", products);
 
     products.forEach((product) => {
       const key = product.name_id?.toString();
       if (!key) return;
 
-      if (!map.has(key))
-        map.set(key, {
+      if (!productMap.has(key)) {
+        productMap.set(key, {
           _id: product.name_id,
           name: product.name,
           total: 0,
           sold: 0,
         });
+      }
 
-      const entry = map.get(key);
+      const entry = productMap.get(key);
       entry.total += 1;
 
-      if (product.sale_entry?.qr_code) entry.sold += 1;
+      if (product.sale_entry?.qr_code) {
+        entry.sold += 1;
+
+        const sellerId = product.sale_entry.seller_id;
+        if (sellerId) {
+          const normalizedSellerId = sellerId.toString();
+          sellerSalesMap.set(
+            normalizedSellerId,
+            (sellerSalesMap.get(normalizedSellerId) || 0) + 1,
+          );
+        }
+      }
     });
 
-    const productStats = Array.from(map.values());
+    const productStats = Array.from(productMap.values());
+
+    const enrichedSellers = sellers.map((seller) => {
+      const sellerKey = (seller.telegram_id || seller._id)?.toString();
+
+      return {
+        ...seller,
+        soldProducts: sellerSalesMap.get(sellerKey) || 0,
+      };
+    });
 
     return res.status(200).json({
       success: true,
       pharmacy: {
         ...pharmacy,
         stats: productStats,
-        sellers,
+        sellers: {
+          total: sellers.length,
+          items: enrichedSellers,
+        },
       },
     });
   } catch (error) {

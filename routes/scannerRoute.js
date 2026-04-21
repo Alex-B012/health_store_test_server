@@ -1,14 +1,14 @@
 import express from "express";
-import { scanProduct } from "../controllers/scannerController.js";
 import telegramAuth from "../bot/telegramAuth.js";
+import { scanProduct } from "../controllers/scannerController.js";
 import { requireRole } from "../middlewares/authUser.js";
 
 const scannerRouter = express.Router();
 
 scannerRouter.post(
   "/product",
-  telegramAuth(),
-  requireRole(["seller", "admin"]),
+  // telegramAuth(),
+  // requireRole(["seller", "admin"]),
   scanProduct,
 );
 // scannerRouter.post("/product", scanProduct);
