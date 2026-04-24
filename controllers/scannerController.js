@@ -1,4 +1,5 @@
 import { pharmacies_codes, warehouse_employees } from "../data/data.js";
+import issueLogModel from "../models/issueLogModel.js";
 import productModel from "../models/productModel.js";
 import {
   test_generateProductName,
@@ -17,12 +18,7 @@ const scanProduct = async (req, res) => {
   try {
     const { scannerData } = req.body;
     const { telegramUser } = req;
-
-    // console.log("telegramUser", telegramUser);
-    console.log("telegramUser id", telegramUser.id);
-    console.log("scannerData - received:", scannerData);
-
-    const qr_code = test_generateQrCode(scannerData.text);
+    const qr_code = scannerData[0].text;
 
     if (!qr_code)
       return res.status(400).json({

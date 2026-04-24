@@ -86,32 +86,32 @@ bot.setWebHook(`${SERVER_URL}/bot${TOKEN}`);
 //   next();
 // });
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  console.log("Request origin:", origin);
+// app.use((req, res, next) => {
+//   const origin = req.headers.origin;
+//   console.log("Request origin:", origin);
 
-  const allowedHeaders = ["Content-Type", "Authorization", "x-api-key"];
+//   const allowedHeaders = ["Content-Type", "Authorization", "x-api-key"];
 
-  // Always set these
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  // res.setHeader("Access-Control-Allow-Headers", allowedHeaders.join(", "));
+//   // Always set these
+//   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+//   res.setHeader("Access-Control-Allow-Headers", allowedHeaders.join(", "));
 
-  // Handle allowed origins
-  if (
-    origin &&
-    (allowedOrigins.includes(origin) || origin.endsWith(".ngrok-free.dev"))
-  ) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-  }
+//   // Handle allowed origins
+//   if (
+//     origin &&
+//     (allowedOrigins.includes(origin) || origin.endsWith(".ngrok-free.dev"))
+//   ) {
+//     res.setHeader("Access-Control-Allow-Origin", origin);
+//     res.setHeader("Access-Control-Allow-Credentials", "true");
+//   }
 
-  // Handle preflight FIRST
-  if (req.method === "OPTIONS") return res.sendStatus(204);
+//   // Handle preflight FIRST
+//   if (req.method === "OPTIONS") return res.sendStatus(204);
 
-  next();
-});
+//   next();
+// });
 
-// app.use(cors({}));
+app.use(cors({}));
 // --- Middleware ---
 app.use(loggingMiddleware);
 // app.use(tokenVerificationMiddleware(API_KEY));
