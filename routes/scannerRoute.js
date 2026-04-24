@@ -7,8 +7,8 @@ const scannerRouter = express.Router();
 
 scannerRouter.post(
   "/product",
-  telegramAuth(),
-  requireRole(["seller", "admin"]),
+  // telegramAuth(),
+  // requireRole(["seller", "admin"]),
   scanProduct,
 );
 // scannerRouter.post("/product", scanProduct);
