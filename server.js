@@ -117,7 +117,14 @@ app.use(loggingMiddleware);
 // app.use(tokenVerificationMiddleware(API_KEY));
 
 // --- Routes ---
-app.use("/api/scanner", scannerRouter);
+app.use(
+  "/api/scanner",
+  (req, res, next) => {
+    console.log("scannerRouter hit:", req.method, req.url);
+    next();
+  },
+  scannerRouter,
+);
 app.use(
   "/api/manager",
   (req, res, next) => {
