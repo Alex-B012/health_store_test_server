@@ -66,6 +66,8 @@ function telegramAuth() {
       return res.status(403).json({ error: "No permissions assigned" });
 
     req.telegramUser = verified.user;
+    console.log("req.telegramUser:", req.telegramUser);
+    console.log("verified.user:", verified.user);
     req.permission_role = role_admin
       ? "admin"
       : role_seller

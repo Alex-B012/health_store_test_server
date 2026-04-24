@@ -1,6 +1,20 @@
 const pharmacies_codes = [1, 10, 11, 12, 13, 14, 15];
 const roles = ["admin", "manager", "seller"];
 const warehouse_employees = [20001, 20002, 20003, 20004, 20005];
+
+const PRODUCTS = [
+  {
+    name: "Product test 01",
+    name_id: "69da6c8331eb14dc9a406b05",
+    stock_entry: {
+      qr_code: "\x1D0104602441024650215ormOJdNxoNzv\x1D93bwZV",
+      date: "2026-04-24T18:47:24.713+00:00",
+      employee_id: 2005,
+    },
+    pharmacy_id: 13,
+  },
+];
+
 const PRODUCTS_NAMES = [
   {
     name: "Инотекс",
@@ -549,6 +563,7 @@ export {
   pharmacies_codes,
   roles,
   warehouse_employees,
+  PRODUCTS,
   PRODUCTS_NAMES,
   SELLERS,
   MANAGERS,

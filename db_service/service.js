@@ -8,6 +8,7 @@ import {
   ADMINS,
   MANAGERS,
   pharmacies_codes,
+  PRODUCTS,
   PRODUCTS_NAMES,
   SELLERS,
   warehouse_employees,
@@ -169,11 +170,42 @@ const products_populate = async () => {
   }
 };
 
+const products_populate_array = async () => {
+  try {
+    console.log(`Products populating array - started`);
+
+    const products = [];
+
+    for (const item of PRODUCTS) {
+      products.push({
+        name: item.name,
+        name_id: item.name_id,
+        pharmacy_id: item.pharmacy_id,
+
+        stock_entry: {
+          qr_code: item.stock_entry.qr_code,
+          date: item.stock_entry.date,
+          employee_id: item.stock_entry.employee_id,
+        },
+      });
+    }
+
+    await productModel.insertMany(products);
+
+    console.log(
+      `Products populated successfully - Inserted ${products.length} products`,
+    );
+  } catch (error) {
+    console.error("ERROR - products populating:", error);
+  }
+};
+
 export {
   admins_populate,
   managers_populate,
   sellers_populate,
   products_populate,
+  products_populate_array,
   pharmacies_populate,
   populateProductNames,
 };

@@ -18,8 +18,8 @@ const scanProduct = async (req, res) => {
     const { scannerData } = req.body;
     const { telegramUser } = req;
 
-    console.log("telegramUser", telegramUser);
-    console.log("telegramUser id", telegramUser.telegram_id);
+    // console.log("telegramUser", telegramUser);
+    console.log("telegramUser id", telegramUser.id);
     console.log("scannerData - received:", scannerData);
 
     const qr_code = test_generateQrCode(scannerData.text);
@@ -34,6 +34,8 @@ const scanProduct = async (req, res) => {
       "stock_entry.qr_code": qr_code,
     });
 
+    console.log("product:", product);
+
     if (!product)
       return res.status(404).json({
         success: false,
@@ -44,7 +46,7 @@ const scanProduct = async (req, res) => {
       await issueLogModel.create({
         date: new Date(),
         product_id: product._id,
-        telegram_id: telegramUser.telegram_id,
+        telegram_id: telegramUser.id,
       });
 
       return res.status(409).json({
@@ -55,7 +57,7 @@ const scanProduct = async (req, res) => {
 
     const saleEntry = {
       date: scannerData.date ? new Date(scannerData.date) : new Date(),
-      seller_id: telegramUser.telegram_id,
+      seller_id: telegramUser.id,
     };
 
     product.sale_entry = saleEntry;

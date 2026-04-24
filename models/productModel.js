@@ -1,16 +1,13 @@
 import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, "Введите название продукта"],
-  },
   name_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Product",
+    required: true,
   },
   stock_entry: {
-    qr_code: { type: String },
+    qr_code: { type: String, required: true },
     date: { type: Date },
     employee_id: { type: Number },
   },

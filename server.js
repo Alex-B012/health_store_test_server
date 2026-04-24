@@ -25,6 +25,7 @@ import {
   managers_populate,
   sellers_populate,
   products_populate,
+  products_populate_array,
   pharmacies_populate,
   populateProductNames,
 } from "./db_service/service.js";
@@ -58,6 +59,7 @@ connectDB();
 // const isPopulateSellers = false;
 // const isPopulateProductNames = false;
 // const isPopulateProducts = false;
+// const isPopulateProductsArray = false;
 // if (isPopulateAdmins) admins_populate();
 // if (isPopulateManagers) managers_populate();
 // if (isPopulatePharmacies) pharmacies_populate();
@@ -68,6 +70,7 @@ connectDB();
 // }
 // if (isPopulateProductNames) populateProductNames();
 // if (isPopulateProducts) products_populate();
+// if (isPopulateProductsArray) products_populate_array();
 
 app.use(express.json());
 
@@ -91,7 +94,7 @@ app.use((req, res, next) => {
 
   // Always set these
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", allowedHeaders.join(", "));
+  // res.setHeader("Access-Control-Allow-Headers", allowedHeaders.join(", "));
 
   // Handle allowed origins
   if (
@@ -115,7 +118,14 @@ app.use(loggingMiddleware);
 
 // --- Routes ---
 app.use("/api/scanner", scannerRouter);
-app.use("/api/manager", managerRouter);
+app.use(
+  "/api/manager",
+  (req, res, next) => {
+    console.log("managerRouter hit:", req.method, req.url);
+    next();
+  },
+  managerRouter,
+);
 
 app.get("/", (req, res) => {
   res.send("Hello! Server is running safely with ngrok.");
