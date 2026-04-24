@@ -31,7 +31,7 @@ const getDashboardData = async (req, res) => {
               totalSales: [
                 {
                   $match: {
-                    "sale_entry.qr_code": { $exists: true, $ne: null, $ne: "" },
+                    "sale_entry.date": { $ne: null },
                   },
                 },
                 { $count: "count" },
@@ -40,8 +40,8 @@ const getDashboardData = async (req, res) => {
               salesBySeller: [
                 {
                   $match: {
-                    "sale_entry.seller_id": { $exists: true, $ne: null },
-                    "sale_entry.qr_code": { $exists: true, $ne: null, $ne: "" },
+                    "sale_entry.seller_id": { $ne: null },
+                    "sale_entry.date": { $ne: null },
                   },
                 },
                 {
@@ -51,20 +51,9 @@ const getDashboardData = async (req, res) => {
                   },
                 },
                 {
-                  $addFields: {
-                    sellerObjectId: {
-                      $cond: [
-                        { $eq: [{ $type: "$_id" }, "string"] },
-                        { $toObjectId: "$_id" },
-                        "$_id",
-                      ],
-                    },
-                  },
-                },
-                {
                   $lookup: {
                     from: "sellers",
-                    localField: "sellerObjectId",
+                    localField: "_id",
                     foreignField: "_id",
                     as: "seller",
                   },
@@ -79,7 +68,9 @@ const getDashboardData = async (req, res) => {
                   $project: {
                     _id: 1,
                     salesCount: 1,
-                    name: { $ifNull: ["$seller.name", "Unknown Seller"] },
+                    name: {
+                      $ifNull: ["$seller.name.name", "Unknown Seller"],
+                    },
                   },
                 },
                 { $sort: { salesCount: -1 } },
@@ -97,6 +88,7 @@ const getDashboardData = async (req, res) => {
               as: "soldProducts",
             },
           },
+
           {
             $addFields: {
               productsSold: {
@@ -105,17 +97,14 @@ const getDashboardData = async (req, res) => {
                     input: "$soldProducts",
                     as: "p",
                     cond: {
-                      $and: [
-                        { $ne: ["$$p.sale_entry.qr_code", null] },
-                        { $ne: ["$$p.sale_entry.qr_code", ""] },
-                        { $ifNull: ["$$p.sale_entry.qr_code", false] },
-                      ],
+                      $ne: ["$$p.sale_entry.date", null],
                     },
                   },
                 },
               },
             },
           },
+
           {
             $project: {
               _id: 1,
@@ -124,6 +113,7 @@ const getDashboardData = async (req, res) => {
               productsSold: 1,
             },
           },
+
           { $sort: { productsSold: -1 } },
         ]),
 
@@ -162,7 +152,7 @@ const getAllProducts = async (req, res) => {
     const [products, sellers, statsResult, categoryStats] = await Promise.all([
       productModel
         .find({
-          "sale_entry.qr_code": {
+          "sale_entry.date": {
             $exists: true,
             $ne: null,
             $ne: "",

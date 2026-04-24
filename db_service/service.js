@@ -178,7 +178,6 @@ const products_populate_array = async () => {
 
     for (const item of PRODUCTS) {
       products.push({
-        name: item.name,
         name_id: item.name_id,
         pharmacy_id: item.pharmacy_id,
 

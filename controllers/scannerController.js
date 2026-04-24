@@ -1,6 +1,7 @@
 import { pharmacies_codes, warehouse_employees } from "../data/data.js";
 import issueLogModel from "../models/issueLogModel.js";
 import productModel from "../models/productModel.js";
+import sellerModel from "../models/sellerModel.js";
 import {
   test_generateProductName,
   test_generateQrCode,
@@ -18,7 +19,7 @@ const scanProduct = async (req, res) => {
   try {
     const { scannerData } = req.body;
     const { telegramUser } = req;
-    const qr_code = scannerData[0].text;
+    const qr_code = scannerData?.[0]?.text;
 
     if (!qr_code)
       return res.status(400).json({
@@ -51,9 +52,13 @@ const scanProduct = async (req, res) => {
       });
     }
 
+    const seller = await sellerModel.findOne({
+      telegram_id: telegramUser.id,
+    });
+
     const saleEntry = {
       date: scannerData.date ? new Date(scannerData.date) : new Date(),
-      seller_id: telegramUser.id,
+      seller_id: seller._id,
     };
 
     product.sale_entry = saleEntry;

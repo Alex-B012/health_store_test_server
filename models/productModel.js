@@ -15,7 +15,10 @@ const productSchema = new mongoose.Schema({
   sale_entry: {
     qr_code: { type: String },
     date: { type: Date },
-    seller_id: { type: String },
+    seller_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "seller",
+    },
   },
 });
 

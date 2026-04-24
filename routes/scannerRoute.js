@@ -11,6 +11,5 @@ scannerRouter.post(
   requireRole(["seller", "admin"]),
   scanProduct,
 );
-// scannerRouter.post("/product", scanProduct);
 
 export default scannerRouter;
