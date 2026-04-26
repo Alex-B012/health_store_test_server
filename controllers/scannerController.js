@@ -102,66 +102,102 @@ const getProfile = async (req, res) => {
   try {
       const { telegramUser } = req;
 
-         const seller = await sellerModel.findOne({
-      telegram_id: telegramUser.id,
-    }).select("-__v -dob -employmentPeriod -telegram_id");
-
-
-
-if (!seller)
-      return res.status(404).json({
-        success: false,
-        message: "Seller not found",
-      });
-
-const products = await productModel.aggregate([
+const result = await sellerModel.aggregate([
   {
     $match: {
-      "sale_entry.seller_id": seller._id,
-    },
-  },
-  {
-    $sort: {
-      "sale_entry.date": -1, 
+      telegram_id: telegramUser.id,
     },
   },
   {
     $lookup: {
-      from: "productnames",
-      localField: "name_id",
-      foreignField: "_id",
-      as: "productName",
+      from: "pharmacies",
+      localField: "location_id",
+      foreignField: "pharmacyNumber",
+      as: "pharmacy",
     },
   },
   {
     $unwind: {
-      path: "$productName",
+      path: "$pharmacy",
       preserveNullAndEmptyArrays: true,
     },
   },
   {
-    $addFields: {
-      name: "$productName.name",
+    $lookup: {
+      from: "products",
+      let: { sellerId: "$_id" },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $eq: ["$sale_entry.seller_id", "$$sellerId"],
+            },
+          },
+        },
+        {
+          $sort: { "sale_entry.date": -1 },
+        },
+        {
+          $lookup: {
+            from: "productnames",
+            localField: "name_id",
+            foreignField: "_id",
+            as: "productName",
+          },
+        },
+        {
+          $unwind: {
+            path: "$productName",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            name: "$productName.name",
+          },
+        },
+        {
+          $project: {
+            productName: 0,
+          },
+        },
+      ],
+      as: "products",
     },
-  }, 
+  },
+  {
+    $addFields: {
+      pharmacyName: { $ifNull: ["$pharmacy.name", null] },
+    },
+  },
   {
     $project: {
-      productName: 0,
+      __v: 0,
+      dob: 0,
+      employmentPeriod: 0,
+      telegram_id: 0,
+      pharmacy: 0,
     },
   },
 ]);
 
-const sellerObj = seller.toObject();
 
-sellerObj.products = products;
+if (!result.length) {
+  return res.status(404).json({
+    success: false,
+    message: "Seller not found",
+  });
+}
 
-console.log("Products:", seller.products)
-console.log("getProfile seller:", seller)
+const seller = result[0];
+
+console.log("Products:", seller.products);
+console.log("getProfile seller:", seller);
 
 return res.json({
   success: true,
   message: "Seller found",
-  profile: sellerObj,
+  profile: seller,
 });
 
     } catch (error) {
