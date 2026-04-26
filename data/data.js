@@ -1,4 +1,4 @@
-const pharmacies_codes = [1, 10, 11, 12, 13, 14, 15];
+const pharmacies_codes = [1, 9, 10, 11, 12, 13, 14, 15];
 const roles = ["admin", "manager", "seller"];
 const warehouse_employees = [20001, 20002, 20003, 20004, 20005];
 
@@ -9,6 +9,16 @@ const PRODUCTS = [
     stock_entry: {
       qr_code: "\x1D0104602441024650215ormOJdNxoNzv\x1D93bwZV",
       date: "2026-04-24T18:47:24.713+00:00",
+      employee_id: 2005,
+    },
+    pharmacy_id: 9,
+  },
+  {
+    name: "Product test 02",
+    name_id: "69da6c8331eb14dc9a406b05",
+    stock_entry: {
+      qr_code: "\x1D0104600682042266215yf>MOM\x1D93Oxlh",
+      date: "2026-04-25T10:47:24.713+00:00",
       employee_id: 2005,
     },
     pharmacy_id: 13,
@@ -63,7 +73,7 @@ const PRODUCTS_NAMES = [
 
 const SELLERS = [
   {
-    name: { name: "Насрулло", patronymic: "", surname: "Акис" },
+    name: { firstName: "Насрулло", patronymic: "", lastName: "Акис" },
     dob: new Date("2011-02-04"),
     employmentPeriod: {
       status: "active",
@@ -75,7 +85,7 @@ const SELLERS = [
     phone: "+75550145827",
   },
   {
-    name: { name: "Иван", patronymic: "Сергеевич", surname: "Петров" },
+    name: { firstName: "Иван", patronymic: "Сергеевич", lastName: "Петров" },
     dob: new Date("1990-04-12"),
     employmentPeriod: {
       status: "active",
@@ -87,7 +97,7 @@ const SELLERS = [
     phone: "+79154823910",
   },
   {
-    name: { name: "Анна", patronymic: "Сергеевна", surname: "Иванова" },
+    name: { firstName: "Анна", patronymic: "Сергеевна", lastName: "Иванова" },
     dob: new Date("1992-05-17"),
     employmentPeriod: {
       status: "active",
@@ -99,7 +109,7 @@ const SELLERS = [
     phone: "+79267405183",
   },
   {
-    name: { name: "Дмитрий", patronymic: "Александрович", surname: "Иванов" },
+    name: { firstName: "Дмитрий", patronymic: "Александрович", lastName: "Иванов" },
     dob: new Date("1985-09-23"),
     employmentPeriod: {
       status: "active",
@@ -111,7 +121,7 @@ const SELLERS = [
     phone: "+75551846674",
   },
   {
-    name: { name: "Сергей", patronymic: "Николаевич", surname: "Смирнов" },
+    name: { firstName: "Сергей", patronymic: "Николаевич", lastName: "Смирнов" },
     dob: new Date("1978-01-30"),
     employmentPeriod: {
       status: "active",
@@ -123,7 +133,7 @@ const SELLERS = [
     phone: "+79095529041",
   },
   {
-    name: { name: "Екатерина", patronymic: "Дмитриевна", surname: "Кузнецова" },
+    name: { firstName: "Екатерина", patronymic: "Дмитриевна", lastName: "Кузнецова" },
     dob: new Date("1988-10-09"),
     employmentPeriod: {
       status: "active",
@@ -135,7 +145,7 @@ const SELLERS = [
     phone: "+79853047712",
   },
   {
-    name: { name: "Алексей", patronymic: "Дмитриевич", surname: "Волков" },
+    name: { firstName: "Алексей", patronymic: "Дмитриевич", lastName: "Волков" },
     dob: new Date("1998-07-19"),
     employmentPeriod: {
       status: "non-active",
@@ -147,7 +157,7 @@ const SELLERS = [
     phone: "+79166632095",
   },
   {
-    name: { name: "Мария", patronymic: "Павловна", surname: "Соколова" },
+    name: { firstName: "Мария", patronymic: "Павловна", lastName: "Соколова" },
     dob: new Date("1995-02-25"),
     employmentPeriod: {
       status: "active",
@@ -159,7 +169,7 @@ const SELLERS = [
     phone: "+79254801936",
   },
   {
-    name: { name: "Анастасия", patronymic: "Игоревна", surname: "Морозова" },
+    name: { firstName: "Анастасия", patronymic: "Игоревна", lastName: "Морозова" },
     dob: new Date("2006-07-14"),
     employmentPeriod: {
       status: "active",
@@ -174,7 +184,7 @@ const SELLERS = [
 
 const MANAGERS = [
   {
-    name: { name: "Александр", patronymic: "Викторович", surname: "Орлов" },
+    name: { name: "Александр", patronymic: "Викторович", lastName: "Орлов" },
     dob: new Date("1980-06-14"),
     employmentPeriod: {
       status: "active",
@@ -185,7 +195,7 @@ const MANAGERS = [
     telegram_id: 91827364,
   },
   {
-    name: { name: "Максим", patronymic: "Андреевич", surname: "Федоров" },
+    name: { name: "Максим", patronymic: "Андреевич", lastName: "Федоров" },
     dob: new Date("1991-11-22"),
     employmentPeriod: {
       status: "active",
@@ -196,7 +206,7 @@ const MANAGERS = [
     telegram_id: 82736455,
   },
   {
-    name: { name: "Ольга", patronymic: "Сергеевна", surname: "Морозова" },
+    name: { name: "Ольга", patronymic: "Сергеевна", lastName: "Морозова" },
     dob: new Date("1987-03-08"),
     employmentPeriod: {
       status: "active",
@@ -207,7 +217,7 @@ const MANAGERS = [
     telegram_id: 73645582,
   },
   {
-    name: { name: "Наталья", patronymic: "Дмитриевна", surname: "Васильева" },
+    name: { name: "Наталья", patronymic: "Дмитриевна", lastName: "Васильева" },
     dob: new Date("1993-07-19"),
     employmentPeriod: {
       status: "active",
@@ -218,7 +228,7 @@ const MANAGERS = [
     telegram_id: 64558291,
   },
   {
-    name: { name: "Елена", patronymic: "Павловна", surname: "Новикова" },
+    name: { name: "Елена", patronymic: "Павловна", lastName: "Новикова" },
     dob: new Date("1985-12-02"),
     employmentPeriod: {
       status: "active",

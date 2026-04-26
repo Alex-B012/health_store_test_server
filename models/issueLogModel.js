@@ -8,6 +8,7 @@ const issueLogSchema = new mongoose.Schema({
     required: true,
   },
   telegram_id: { type: Number, required: true },
+  comment: { type: String}
 });
 
 const issueLogModel =

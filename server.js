@@ -58,8 +58,8 @@ connectDB();
 // const isPopulatePharmacies = false;
 // const isPopulateSellers = false;
 // const isPopulateProductNames = false;
-// const isPopulateProducts = false;
-// const isPopulateProductsArray = false;
+// const isPopulateProducts = true;
+// const isPopulateProductsArray_new = false;
 // if (isPopulateAdmins) admins_populate();
 // if (isPopulateManagers) managers_populate();
 // if (isPopulatePharmacies) pharmacies_populate();
@@ -71,7 +71,7 @@ connectDB();
 // }
 // if (isPopulateProductNames) populateProductNames();
 // if (isPopulateProducts) products_populate();
-// if (isPopulateProductsArray) products_populate_array();
+// if (isPopulateProductsArray_new) products_populate_array();
 
 app.use(express.json());
 

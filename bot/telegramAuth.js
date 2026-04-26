@@ -40,6 +40,7 @@ function verifyTelegramInitData(initData) {
 // Middleware factory (permission-aware)
 function telegramAuth() {
   console.log("telegramAuth - start");
+
   return async (req, res, next) => {
     const initData = req.headers.authorization;
     console.log("initData:", initData);
@@ -78,5 +79,4 @@ function telegramAuth() {
   };
 }
 
-// module.exports =  telegramAuth ;
 export default telegramAuth;

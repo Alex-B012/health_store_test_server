@@ -12,6 +12,7 @@ import {
 import { handleServerError } from "../utils/utils.js";
 
 const EXCLUDED_DATA = "-__v -date -createdAt -updatedAt";
+const EXCLUDED_DATA_V = "-__v";
 
 const scanProduct = async (req, res) => {
   console.log("scanProduct - start:");
@@ -20,6 +21,8 @@ const scanProduct = async (req, res) => {
     const { scannerData } = req.body;
     const { telegramUser } = req;
     const qr_code = scannerData?.[0]?.text;
+
+ console.log("scannerData", scannerData);
 
     if (!qr_code)
       return res.status(400).json({
@@ -44,6 +47,7 @@ const scanProduct = async (req, res) => {
         date: new Date(),
         product_id: product._id,
         telegram_id: telegramUser.id,
+        comment: "QR code already assigned"
       });
 
       return res.status(409).json({
@@ -54,7 +58,22 @@ const scanProduct = async (req, res) => {
 
     const seller = await sellerModel.findOne({
       telegram_id: telegramUser.id,
-    });
+    }).select(EXCLUDED_DATA_V);
+
+if(seller.location_id !== product.pharmacy_id) {
+  await issueLogModel.create({
+        date: new Date(),
+        product_id: product._id,
+        telegram_id: telegramUser.id,
+         comment: "QR code scanned is from another pharmacy "
+      });
+
+      return res.status(400).json({
+        success: false,
+        message: "Invalid QR code - pharmacy",
+      });
+}
+
 
     const saleEntry = {
       date: scannerData.date ? new Date(scannerData.date) : new Date(),
@@ -76,4 +95,79 @@ const scanProduct = async (req, res) => {
   }
 };
 
-export { scanProduct };
+
+const getProfile = async (req, res) => {
+  console.log("getProfile - start:");
+
+  try {
+      const { telegramUser } = req;
+
+         const seller = await sellerModel.findOne({
+      telegram_id: telegramUser.id,
+    }).select("-__v -dob -employmentPeriod -telegram_id");
+
+
+
+if (!seller)
+      return res.status(404).json({
+        success: false,
+        message: "Seller not found",
+      });
+
+const products = await productModel.aggregate([
+  {
+    $match: {
+      "sale_entry.seller_id": seller._id,
+    },
+  },
+  {
+    $sort: {
+      "sale_entry.date": -1, 
+    },
+  },
+  {
+    $lookup: {
+      from: "productnames",
+      localField: "name_id",
+      foreignField: "_id",
+      as: "productName",
+    },
+  },
+  {
+    $unwind: {
+      path: "$productName",
+      preserveNullAndEmptyArrays: true,
+    },
+  },
+  {
+    $addFields: {
+      name: "$productName.name",
+    },
+  }, 
+  {
+    $project: {
+      productName: 0,
+    },
+  },
+]);
+
+const sellerObj = seller.toObject();
+
+sellerObj.products = products;
+
+console.log("Products:", seller.products)
+console.log("getProfile seller:", seller)
+
+return res.json({
+  success: true,
+  message: "Seller found",
+  profile: sellerObj,
+});
+
+    } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
+
+export { scanProduct, getProfile };
