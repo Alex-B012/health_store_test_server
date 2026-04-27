@@ -22,7 +22,7 @@ const scanProduct = async (req, res) => {
     const { telegramUser } = req;
     const qr_code = scannerData?.[0]?.text;
 
- console.log("scannerData", scannerData);
+    console.log("scannerData", scannerData);
 
     if (!qr_code)
       return res.status(400).json({
@@ -47,7 +47,7 @@ const scanProduct = async (req, res) => {
         date: new Date(),
         product_id: product._id,
         telegram_id: telegramUser.id,
-        comment: "QR code already assigned"
+        comment: "QR code already assigned",
       });
 
       return res.status(409).json({
@@ -56,24 +56,25 @@ const scanProduct = async (req, res) => {
       });
     }
 
-    const seller = await sellerModel.findOne({
-      telegram_id: telegramUser.id,
-    }).select(EXCLUDED_DATA_V);
+    const seller = await sellerModel
+      .findOne({
+        telegram_id: telegramUser.id,
+      })
+      .select(EXCLUDED_DATA_V);
 
-if(seller.location_id !== product.pharmacy_id) {
-  await issueLogModel.create({
+    if (seller.location_id !== product.pharmacy_id) {
+      await issueLogModel.create({
         date: new Date(),
         product_id: product._id,
         telegram_id: telegramUser.id,
-         comment: "QR code scanned is from another pharmacy "
+        comment: "QR code scanned is from another pharmacy ",
       });
 
       return res.status(400).json({
         success: false,
         message: "Invalid QR code - pharmacy",
       });
-}
-
+    }
 
     const saleEntry = {
       date: scannerData.date ? new Date(scannerData.date) : new Date(),
@@ -95,115 +96,134 @@ if(seller.location_id !== product.pharmacy_id) {
   }
 };
 
-
 const getProfile = async (req, res) => {
   console.log("getProfile - start:");
 
   try {
-      const { telegramUser } = req;
+    const { telegramUser } = req;
 
-const result = await sellerModel.aggregate([
-  {
-    $match: {
-      telegram_id: telegramUser.id,
-    },
-  },
-  {
-    $lookup: {
-      from: "pharmacies",
-      localField: "location_id",
-      foreignField: "pharmacyNumber",
-      as: "pharmacy",
-    },
-  },
-  {
-    $unwind: {
-      path: "$pharmacy",
-      preserveNullAndEmptyArrays: true,
-    },
-  },
-  {
-    $lookup: {
-      from: "products",
-      let: { sellerId: "$_id" },
-      pipeline: [
-        {
-          $match: {
-            $expr: {
-              $eq: ["$sale_entry.seller_id", "$$sellerId"],
+    const result = await sellerModel.aggregate([
+      {
+        $match: {
+          telegram_id: telegramUser.id,
+        },
+      },
+      {
+        $lookup: {
+          from: "pharmacies",
+          localField: "location_id",
+          foreignField: "pharmacyNumber",
+          as: "pharmacy",
+        },
+      },
+      {
+        $unwind: {
+          path: "$pharmacy",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "products",
+          let: { sellerId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$sale_entry.seller_id", "$$sellerId"],
+                },
+              },
             },
-          },
-        },
-        {
-          $sort: { "sale_entry.date": -1 },
-        },
-        {
-          $lookup: {
-            from: "productnames",
-            localField: "name_id",
-            foreignField: "_id",
-            as: "productName",
-          },
-        },
-        {
-          $unwind: {
-            path: "$productName",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $addFields: {
-            name: "$productName.name",
-          },
-        },
-        {
-          $project: {
-            productName: 0,
-          },
-        },
-      ],
-      as: "products",
-    },
-  },
-  {
-    $addFields: {
-      pharmacyName: { $ifNull: ["$pharmacy.name", null] },
-    },
-  },
-  {
-    $project: {
-      __v: 0,
-      dob: 0,
-      employmentPeriod: 0,
-      telegram_id: 0,
-      pharmacy: 0,
-    },
-  },
-]);
+            {
+              $facet: {
+                totalCount: [{ $count: "count" }],
+                latestSales: [
+                  { $sort: { "sale_entry.date": -1 } },
+                  { $limit: 100 },
 
+                  {
+                    $lookup: {
+                      from: "productnames",
+                      localField: "name_id",
+                      foreignField: "_id",
+                      as: "productName",
+                    },
+                  },
+                  {
+                    $unwind: {
+                      path: "$productName",
+                      preserveNullAndEmptyArrays: true,
+                    },
+                  },
+                  {
+                    $addFields: {
+                      name: "$productName.name",
+                    },
+                  },
+                  {
+                    $project: {
+                      productName: 0,
+                    },
+                  },
+                ],
+              },
+            },
+            {
+              $addFields: {
+                totalSales: {
+                  $ifNull: [{ $arrayElemAt: ["$totalCount.count", 0] }, 0],
+                },
+              },
+            },
+            {
+              $project: {
+                latestSales: 1,
+                totalSales: 1,
+              },
+            },
+          ],
+          as: "products",
+        },
+      },
+      {
+        $addFields: {
+          pharmacyName: { $ifNull: ["$pharmacy.name", null] },
+        },
+      },
+      {
+        $project: {
+          __v: 0,
+          dob: 0,
+          employmentPeriod: 0,
+          telegram_id: 0,
+          pharmacy: 0,
+        },
+      },
+    ]);
 
-if (!result.length) {
-  return res.status(404).json({
-    success: false,
-    message: "Seller not found",
-  });
-}
+    if (!result.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Seller not found",
+      });
+    }
 
-const seller = result[0];
+    const seller = result[0];
 
-console.log("Products:", seller.products);
-console.log("getProfile seller:", seller);
+    seller.totalSales = seller.products?.[0]?.totalSales || 0;
+    seller.products = seller.products?.[0]?.latestSales || [];
 
-return res.json({
-  success: true,
-  message: "Seller found",
-  profile: seller,
-});
+    console.log("Products:", seller.products);
+    console.log("getProfile seller:", seller);
 
-    } catch (error) {
+    return res.json({
+      success: true,
+      message: "Seller found",
+      profile: seller,
+    });
+  } catch (error) {
     handleServerError(res, error);
   }
 };
-
 
 export { scanProduct, getProfile };

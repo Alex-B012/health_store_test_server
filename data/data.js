@@ -23,6 +23,26 @@ const PRODUCTS = [
     },
     pharmacy_id: 13,
   },
+  {
+    name: "Product test 03",
+    name_id: "69da6c8331eb14dc9a406b05",
+    stock_entry: {
+      qr_code: "\x1D0104603934000939215DgR<76nW/nBb\x1D93PxBc",
+      date: "2026-04-27T12:17:05.713+00:00",
+      employee_id: 2005,
+    },
+    pharmacy_id: 9,
+  },
+  {
+    name: "Product test 04",
+    name_id: "69da6c8331eb14dc9a406b05",
+    stock_entry: {
+      qr_code: "\x1D0104603334003639215bhLVroj:)cW%\x1D93oEVI",
+      date: "2026-04-27T21:35:42.713+00:00",
+      employee_id: 2005,
+    },
+    pharmacy_id: 9,
+  },
 ];
 
 const PRODUCTS_NAMES = [
@@ -109,7 +129,11 @@ const SELLERS = [
     phone: "+79267405183",
   },
   {
-    name: { firstName: "Дмитрий", patronymic: "Александрович", lastName: "Иванов" },
+    name: {
+      firstName: "Дмитрий",
+      patronymic: "Александрович",
+      lastName: "Иванов",
+    },
     dob: new Date("1985-09-23"),
     employmentPeriod: {
       status: "active",
@@ -121,7 +145,11 @@ const SELLERS = [
     phone: "+75551846674",
   },
   {
-    name: { firstName: "Сергей", patronymic: "Николаевич", lastName: "Смирнов" },
+    name: {
+      firstName: "Сергей",
+      patronymic: "Николаевич",
+      lastName: "Смирнов",
+    },
     dob: new Date("1978-01-30"),
     employmentPeriod: {
       status: "active",
@@ -133,7 +161,11 @@ const SELLERS = [
     phone: "+79095529041",
   },
   {
-    name: { firstName: "Екатерина", patronymic: "Дмитриевна", lastName: "Кузнецова" },
+    name: {
+      firstName: "Екатерина",
+      patronymic: "Дмитриевна",
+      lastName: "Кузнецова",
+    },
     dob: new Date("1988-10-09"),
     employmentPeriod: {
       status: "active",
@@ -145,7 +177,11 @@ const SELLERS = [
     phone: "+79853047712",
   },
   {
-    name: { firstName: "Алексей", patronymic: "Дмитриевич", lastName: "Волков" },
+    name: {
+      firstName: "Алексей",
+      patronymic: "Дмитриевич",
+      lastName: "Волков",
+    },
     dob: new Date("1998-07-19"),
     employmentPeriod: {
       status: "non-active",
@@ -169,7 +205,11 @@ const SELLERS = [
     phone: "+79254801936",
   },
   {
-    name: { firstName: "Анастасия", patronymic: "Игоревна", lastName: "Морозова" },
+    name: {
+      firstName: "Анастасия",
+      patronymic: "Игоревна",
+      lastName: "Морозова",
+    },
     dob: new Date("2006-07-14"),
     employmentPeriod: {
       status: "active",
