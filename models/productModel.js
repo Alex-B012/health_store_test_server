@@ -23,6 +23,7 @@ const productSchema = new mongoose.Schema({
 });
 
 productSchema.index({ "stock_entry.qr_code": 1 }, { unique: true });
+productSchema.index({ name_id: 1 });
 
 const productModel =
   mongoose.models.product || mongoose.model("product", productSchema);

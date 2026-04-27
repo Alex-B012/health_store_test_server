@@ -213,9 +213,6 @@ const getProfile = async (req, res) => {
     seller.totalSales = seller.products?.[0]?.totalSales || 0;
     seller.products = seller.products?.[0]?.latestSales || [];
 
-    console.log("Products:", seller.products);
-    console.log("getProfile seller:", seller);
-
     return res.json({
       success: true,
       message: "Seller found",

@@ -15,6 +15,7 @@ import {
 import { formatDate, handleServerError, uniqueByName } from "../utils/utils.js";
 import { test_getRandomNumber } from "../utils/tests.js";
 import { warehouse_employees } from "../data/data.js";
+import issueLogModel from "../models/issueLogModel.js";
 
 // API to get dashboard data for manager view
 const getDashboardData = async (req, res) => {
@@ -1147,6 +1148,113 @@ const getAllAdmins = async (req, res) => {
   }
 };
 
+const getAllConflicts = async (req, res) => {
+  console.log("getAllConflicts - start");
+
+  try {
+    const result = await issueLogModel.aggregate([
+      {
+        $lookup: {
+          from: "products",
+          localField: "product_id",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      {
+        $unwind: {
+          path: "$product",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "productnames",
+          localField: "product.name_id",
+          foreignField: "_id",
+          as: "productName",
+        },
+      },
+      {
+        $unwind: {
+          path: "$productName",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "sellers",
+          localField: "telegram_id",
+          foreignField: "telegram_id",
+          as: "seller",
+        },
+      },
+      {
+        $unwind: {
+          path: "$seller",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          productName: "$productName.name",
+          seller: {
+            name: "$seller.name",
+            telegram_id: "$seller.telegram_id",
+          },
+        },
+      },
+      {
+        $project: {
+          __v: 0,
+          product: 0,
+          productName: 0,
+        },
+      },
+      {
+        $facet: {
+          data: [{ $sort: { date: -1 } }],
+          stats: [
+            {
+              $group: {
+                _id: null,
+                totalConflicts: { $sum: 1 },
+                uniqueSellers: { $addToSet: "$telegram_id" },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                totalConflicts: 1,
+                uniqueSellersCount: { $size: "$uniqueSellers" },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    const conflicts = result[0].data;
+    const stats = result[0].stats[0] || {
+      totalConflicts: 0,
+      uniqueSellersCount: 0,
+    };
+
+    console.log(
+      `getAllConflicts - conflicts: ${stats.totalConflicts}, unique sellers: ${stats.uniqueSellersCount}`,
+    );
+
+    res.json({
+      success: true,
+      conflicts,
+      totalConflicts: stats.totalConflicts,
+      uniqueSellers: stats.uniqueSellersCount,
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
 export {
   getAllProducts,
   getProductById,
@@ -1163,4 +1271,5 @@ export {
   getProductsAddData,
   addProducts,
   getDashboardData,
+  getAllConflicts,
 };

@@ -14,6 +14,7 @@ import {
   getProductsAddData,
   addProducts,
   getSellerById,
+  getAllConflicts,
 } from "../controllers/managerController.js";
 
 import telegramAuth from "../bot/telegramAuth.js";
@@ -106,6 +107,12 @@ managerRouter.get(
   // telegramAuth(),
   // requireRole(["manager", "admin"]),
   getAllAdmins,
+);
+managerRouter.get(
+  "/conflicts",
+  // telegramAuth(),
+  // requireRole(["manager", "admin"]),
+  getAllConflicts,
 );
 
 export default managerRouter;

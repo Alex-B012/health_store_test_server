@@ -29,7 +29,6 @@ const sellerSchema = new mongoose.Schema({
 });
 
 sellerSchema.index({ telegram_id: 1 }, { unique: true });
-sellerSchema.index({ phone: 1 }, { unique: true });
 
 const sellerModel =
   mongoose.models.seller || mongoose.model("seller", sellerSchema);
