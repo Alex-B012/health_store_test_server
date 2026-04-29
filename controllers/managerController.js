@@ -157,24 +157,18 @@ const getAllProducts = async (req, res) => {
     // =========================
     // 🔥 DEFINE SOLD CONDITION ONCE (SOURCE OF TRUTH)
     // =========================
+
     const isSoldExpr = {
       $and: [
-        { $ne: ["$sale_entry.date", null] },
-        { $ne: ["$sale_entry.seller_id", null] },
+        { $eq: [{ $type: "$sale_entry.date" }, "date"] },
+        { $eq: [{ $type: "$sale_entry.seller_id" }, "objectId"] },
       ],
     };
 
-    const soldMatch = {
-      $expr: isSoldExpr,
-    };
-
     const [products, sellers, statsResult, categoryStats] = await Promise.all([
-      // =========================
-      // ✅ PRODUCTS (FIXED FILTER)
-      // =========================
       productModel
         .find({
-          $expr: isSoldExpr, // 🔥 FIX: consistent logic
+          $expr: isSoldExpr,
         })
         .sort({ _id: -1 })
         .limit(100)
@@ -184,36 +178,27 @@ const getAllProducts = async (req, res) => {
           select: "name",
           model: "ProductName",
         })
+        .populate({
+          path: "sale_entry.seller_id",
+          select: "name",
+          model: "seller",
+        })
         .lean(),
 
       sellerModel.find({}).select("_id name").lean(),
 
-      // =========================
-      // ✅ STATS (FIXED)
-      // =========================
       productModel.aggregate([
         {
           $facet: {
-            // =========================
-            // TOTAL PRODUCTS
-            // =========================
             totalProducts: [{ $count: "count" }],
 
-            // =========================
-            // SOLD PRODUCTS (FIXED)
-            // =========================
             soldProducts: [
               {
                 $match: {
                   $expr: {
                     $and: [
-                      // sale_entry exists and is object
                       { $ne: [{ $type: "$sale_entry" }, "missing"] },
-
-                      // date exists and is real Date
                       { $eq: [{ $type: "$sale_entry.date" }, "date"] },
-
-                      // seller_id exists and is ObjectId
                       { $eq: [{ $type: "$sale_entry.seller_id" }, "objectId"] },
                     ],
                   },
@@ -222,9 +207,6 @@ const getAllProducts = async (req, res) => {
               { $count: "count" },
             ],
 
-            // =========================
-            // UNIQUE SELLERS (FIXED SAME LOGIC)
-            // =========================
             uniqueSellers: [
               {
                 $match: {
@@ -244,9 +226,6 @@ const getAllProducts = async (req, res) => {
               { $count: "count" },
             ],
 
-            // =========================
-            // UNIQUE PHARMACIES
-            // =========================
             uniquePharmacies: [
               {
                 $group: {
@@ -275,13 +254,7 @@ const getAllProducts = async (req, res) => {
         },
       ]),
 
-      // =========================
-      // ✅ CATEGORY STATS (UNCHANGED BUT CORRECT LOGIC)
-      // =========================
       productModel.aggregate([
-        // =========================
-        // STEP 1: safe projection
-        // =========================
         {
           $project: {
             name_id: 1,
@@ -301,9 +274,6 @@ const getAllProducts = async (req, res) => {
           },
         },
 
-        // =========================
-        // STEP 2: group by category
-        // =========================
         {
           $group: {
             _id: "$name_id",
@@ -312,9 +282,6 @@ const getAllProducts = async (req, res) => {
           },
         },
 
-        // =========================
-        // STEP 3: lookup product name
-        // =========================
         {
           $lookup: {
             from: "productnames",
@@ -331,23 +298,15 @@ const getAllProducts = async (req, res) => {
           },
         },
 
-        // =========================
-        // STEP 4: final output
-        // =========================
         {
           $project: {
             _id: 0,
-
             name_id: "$_id",
-
-            // 🔥 product name from DB
             name: {
               $ifNull: ["$product.name", "Unknown"],
             },
-
             total: 1,
             sold: 1,
-
             category: {
               $ifNull: ["$product.name", "Unknown"],
             },
@@ -360,30 +319,15 @@ const getAllProducts = async (req, res) => {
       ]),
     ]);
 
-    // =========================
-    // SELLER MAP
-    // =========================
+    const enrichedProducts = products.map((p) => ({
+      ...p,
+      product_name: p.name_id?.name || null,
+      seller_name: p.sale_entry?.seller_id?.name || null,
+    }));
+
     const sellerMap = {};
     sellers.forEach((s) => {
       sellerMap[s._id.toString()] = s.name;
-    });
-
-    // =========================
-    // ENRICH PRODUCTS
-    // =========================
-    const enrichedProducts = products.map((p) => {
-      const sale = p.sale_entry || {};
-
-      return {
-        ...p,
-        product_name: p.name_id?.name || null,
-        sale_entry: {
-          ...sale,
-          seller_name: sale.seller_id
-            ? sellerMap[sale.seller_id.toString()] || null
-            : null,
-        },
-      };
     });
 
     const stats = statsResult[0] || {
@@ -396,7 +340,7 @@ const getAllProducts = async (req, res) => {
     return res.json({
       success: true,
       products: {
-        products: enrichedProducts,
+        products: products,
         stats,
         categoryStats,
       },
