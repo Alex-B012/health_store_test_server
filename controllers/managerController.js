@@ -84,32 +84,36 @@ const getDashboardData = async (req, res) => {
           {
             $lookup: {
               from: "products",
-              localField: "pharmacyNumber",
-              foreignField: "pharmacy_id",
+              let: { pharmacyNumber: "$pharmacyNumber" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $eq: ["$pharmacy_id", "$$pharmacyNumber"],
+                    },
+                  },
+                },
+                {
+                  $match: {
+                    "sale_entry.date": { $exists: true, $ne: null },
+                    "sale_entry.seller_id": { $exists: true, $ne: null },
+                  },
+                },
+              ],
               as: "soldProducts",
             },
           },
 
           {
             $addFields: {
-              productsSold: {
-                $size: {
-                  $filter: {
-                    input: "$soldProducts",
-                    as: "p",
-                    cond: {
-                      $ne: ["$$p.sale_entry.date", null],
-                    },
-                  },
-                },
-              },
+              productsSold: { $size: "$soldProducts" },
             },
           },
 
           {
             $project: {
               _id: 1,
-              pharmacyNumber: "$pharmacyNumber",
+              pharmacyNumber: 1,
               pharmacyName: "$name",
               productsSold: 1,
             },
@@ -150,105 +154,177 @@ const getAllProducts = async (req, res) => {
   console.log("getAllProducts - start");
 
   try {
+    // =========================
+    // 🔥 DEFINE SOLD CONDITION ONCE (SOURCE OF TRUTH)
+    // =========================
+    const isSoldExpr = {
+      $and: [
+        { $ne: ["$sale_entry.date", null] },
+        { $ne: ["$sale_entry.seller_id", null] },
+      ],
+    };
+
+    const soldMatch = {
+      $expr: isSoldExpr,
+    };
+
     const [products, sellers, statsResult, categoryStats] = await Promise.all([
+      // =========================
+      // ✅ PRODUCTS (FIXED FILTER)
+      // =========================
       productModel
         .find({
-          "sale_entry.date": {
-            $exists: true,
-            $ne: null,
-            $ne: "",
-          },
+          $expr: isSoldExpr, // 🔥 FIX: consistent logic
         })
         .sort({ _id: -1 })
         .limit(100)
         .select("-__v")
+        .populate({
+          path: "name_id",
+          select: "name",
+          model: "ProductName",
+        })
         .lean(),
 
       sellerModel.find({}).select("_id name").lean(),
 
+      // =========================
+      // ✅ STATS (FIXED)
+      // =========================
       productModel.aggregate([
         {
-          $group: {
-            _id: null,
+          $facet: {
+            // =========================
+            // TOTAL PRODUCTS
+            // =========================
+            totalProducts: [{ $count: "count" }],
 
-            totalProducts: {
-              $sum: {
-                $cond: [{ $ne: ["$sale_entry.seller_id", null] }, 1, 0],
-              },
-            },
+            // =========================
+            // SOLD PRODUCTS (FIXED)
+            // =========================
+            soldProducts: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      // sale_entry exists and is object
+                      { $ne: [{ $type: "$sale_entry" }, "missing"] },
 
-            salesCount: {
-              $sum: {
-                $cond: [
-                  {
-                    $gt: [
-                      {
-                        $strLenCP: {
-                          $ifNull: ["$sale_entry.qr_code", ""],
-                        },
-                      },
-                      0,
+                      // date exists and is real Date
+                      { $eq: [{ $type: "$sale_entry.date" }, "date"] },
+
+                      // seller_id exists and is ObjectId
+                      { $eq: [{ $type: "$sale_entry.seller_id" }, "objectId"] },
                     ],
                   },
-                  1,
-                  0,
-                ],
+                },
               },
-            },
+              { $count: "count" },
+            ],
 
-            uniqueSellers: {
-              $addToSet: "$sale_entry.seller_id",
-            },
+            // =========================
+            // UNIQUE SELLERS (FIXED SAME LOGIC)
+            // =========================
+            uniqueSellers: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: [{ $type: "$sale_entry.date" }, "date"] },
+                      { $eq: [{ $type: "$sale_entry.seller_id" }, "objectId"] },
+                    ],
+                  },
+                },
+              },
+              {
+                $group: {
+                  _id: "$sale_entry.seller_id",
+                },
+              },
+              { $count: "count" },
+            ],
 
-            uniquePharmacies: {
-              $addToSet: "$pharmacy_id",
-            },
+            // =========================
+            // UNIQUE PHARMACIES
+            // =========================
+            uniquePharmacies: [
+              {
+                $group: {
+                  _id: "$pharmacy_id",
+                },
+              },
+              { $count: "count" },
+            ],
           },
         },
         {
           $project: {
-            _id: 0,
-            totalProducts: 1,
-            salesCount: 1,
-            sellersCount: { $size: "$uniqueSellers" },
-            pharmaciesCount: { $size: "$uniquePharmacies" },
+            totalProducts: {
+              $ifNull: [{ $arrayElemAt: ["$totalProducts.count", 0] }, 0],
+            },
+            soldProducts: {
+              $ifNull: [{ $arrayElemAt: ["$soldProducts.count", 0] }, 0],
+            },
+            sellersCount: {
+              $ifNull: [{ $arrayElemAt: ["$uniqueSellers.count", 0] }, 0],
+            },
+            pharmaciesCount: {
+              $ifNull: [{ $arrayElemAt: ["$uniquePharmacies.count", 0] }, 0],
+            },
           },
         },
       ]),
 
+      // =========================
+      // ✅ CATEGORY STATS (UNCHANGED BUT CORRECT LOGIC)
+      // =========================
       productModel.aggregate([
         {
-          $group: {
-            _id: "$name_id",
-            name: { $first: "$name" },
-            total: { $sum: 1 },
-
-            sold: {
-              $sum: {
-                $cond: [
-                  {
-                    $gt: [
-                      {
-                        $strLenCP: {
-                          $ifNull: ["$sale_entry.qr_code", ""],
-                        },
-                      },
-                      0,
-                    ],
-                  },
-                  1,
-                  0,
-                ],
-              },
+          $project: {
+            name_id: 1,
+            isSold: {
+              $cond: [
+                {
+                  $and: [
+                    { $ne: ["$sale_entry.date", null] },
+                    { $ne: ["$sale_entry.seller_id", null] },
+                  ],
+                },
+                1,
+                0,
+              ],
             },
           },
         },
         {
+          $group: {
+            _id: "$name_id",
+            total: { $sum: 1 },
+            sold: { $sum: "$isSold" },
+          },
+        },
+        {
+          $lookup: {
+            from: "productnames",
+            localField: "_id",
+            foreignField: "_id",
+            as: "categoryData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$categoryData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
           $project: {
-            _id: 1,
-            category: "$name",
+            name_id: "$_id",
             total: 1,
             sold: 1,
+            category: {
+              $ifNull: ["$categoryData.name", "Unknown"],
+            },
           },
         },
         {
@@ -257,20 +333,27 @@ const getAllProducts = async (req, res) => {
       ]),
     ]);
 
+    // =========================
+    // SELLER MAP
+    // =========================
     const sellerMap = {};
     sellers.forEach((s) => {
       sellerMap[s._id.toString()] = s.name;
     });
 
+    // =========================
+    // ENRICH PRODUCTS
+    // =========================
     const enrichedProducts = products.map((p) => {
       const sale = p.sale_entry || {};
 
       return {
         ...p,
+        product_name: p.name_id?.name || null,
         sale_entry: {
           ...sale,
           seller_name: sale.seller_id
-            ? sellerMap[sale.seller_id] || null
+            ? sellerMap[sale.seller_id.toString()] || null
             : null,
         },
       };
@@ -278,12 +361,12 @@ const getAllProducts = async (req, res) => {
 
     const stats = statsResult[0] || {
       totalProducts: 0,
-      salesCount: 0,
+      soldProducts: 0,
       sellersCount: 0,
       pharmaciesCount: 0,
     };
 
-    res.json({
+    return res.json({
       success: true,
       products: {
         products: enrichedProducts,
