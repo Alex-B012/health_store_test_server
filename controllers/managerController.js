@@ -691,9 +691,6 @@ const getAllPharmacies = async (req, res) => {
       .select("-__v -createdAt -updatedAt")
       .lean();
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     const enrichedPharmacies = await Promise.all(
       pharmacies.map(async (pharmacy) => {
         const pharmacyNumber = Number(pharmacy.pharmacyNumber);
@@ -701,18 +698,18 @@ const getAllPharmacies = async (req, res) => {
         const [total_products, sold, sellers] = await Promise.all([
           productModel.countDocuments({
             pharmacy_id: pharmacyNumber,
-            "stock_entry.qr_code": { $exists: true, $ne: "" },
           }),
 
           productModel.countDocuments({
             pharmacy_id: pharmacyNumber,
-            "sale_entry.qr_code": { $exists: true, $ne: "" },
+            "sale_entry.date": { $ne: null },
+            "sale_entry.seller_id": { $ne: null },
           }),
 
           sellerModel.countDocuments({
             location_id: pharmacyNumber,
             $or: [
-              { "employmentPeriod.endDate": { $gt: today } },
+              { "employmentPeriod.endDate": { $gt: new Date() } },
               { "employmentPeriod.endDate": null },
               { "employmentPeriod.endDate": { $exists: false } },
             ],
@@ -766,15 +763,11 @@ const getPharmacyById = async (req, res) => {
       .select("-__v -createdAt -updatedAt")
       .lean();
 
-    if (!pharmacy) {
+    if (!pharmacy)
       return res.status(404).json({
         success: false,
         message: "Pharmacy not found",
       });
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
     const pharmacyNumber = Number(pharmacy.pharmacyNumber);
 
@@ -782,19 +775,18 @@ const getPharmacyById = async (req, res) => {
       productModel
         .find({
           pharmacy_id: pharmacyNumber,
-          "stock_entry.qr_code": { $exists: true, $ne: "" },
         })
-        .select("name name_id sale_entry")
+        .select("name_id sale_entry")
+        .populate({
+          path: "name_id",
+          select: "name",
+          model: "ProductName",
+        })
         .lean(),
 
       sellerModel
         .find({
           location_id: pharmacyNumber,
-          $or: [
-            { "employmentPeriod.endDate": { $gt: today } },
-            { "employmentPeriod.endDate": null },
-            { "employmentPeriod.endDate": { $exists: false } },
-          ],
         })
         .select("-__v -createdAt -updatedAt")
         .lean(),
@@ -803,16 +795,14 @@ const getPharmacyById = async (req, res) => {
     const productMap = new Map();
     const sellerSalesMap = new Map();
 
-    // console.log("products", products);
-
     products.forEach((product) => {
-      const key = product.name_id?.toString();
+      const key = product.name_id?._id?.toString();
       if (!key) return;
 
       if (!productMap.has(key)) {
         productMap.set(key, {
-          _id: product.name_id,
-          name: product.name,
+          _id: product.name_id._id,
+          name: product.name_id.name,
           total: 0,
           sold: 0,
         });
@@ -821,24 +811,21 @@ const getPharmacyById = async (req, res) => {
       const entry = productMap.get(key);
       entry.total += 1;
 
-      if (product.sale_entry?.qr_code) {
-        entry.sold += 1;
+      const isSold = product.sale_entry?.date && product.sale_entry?.seller_id;
 
-        const sellerId = product.sale_entry.seller_id;
-        if (sellerId) {
-          const normalizedSellerId = sellerId.toString();
-          sellerSalesMap.set(
-            normalizedSellerId,
-            (sellerSalesMap.get(normalizedSellerId) || 0) + 1,
-          );
-        }
+      if (isSold) {
+        entry.sold += 1;
+        const sellerId = product.sale_entry.seller_id?.toString();
+
+        if (sellerId)
+          sellerSalesMap.set(sellerId, (sellerSalesMap.get(sellerId) || 0) + 1);
       }
     });
 
     const productStats = Array.from(productMap.values());
 
     const enrichedSellers = sellers.map((seller) => {
-      const sellerKey = (seller.telegram_id || seller._id)?.toString();
+      const sellerKey = seller._id?.toString();
 
       return {
         ...seller,
