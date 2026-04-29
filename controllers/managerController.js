@@ -279,15 +279,19 @@ const getAllProducts = async (req, res) => {
       // ✅ CATEGORY STATS (UNCHANGED BUT CORRECT LOGIC)
       // =========================
       productModel.aggregate([
+        // =========================
+        // STEP 1: safe projection
+        // =========================
         {
           $project: {
             name_id: 1,
+
             isSold: {
               $cond: [
                 {
                   $and: [
-                    { $ne: ["$sale_entry.date", null] },
-                    { $ne: ["$sale_entry.seller_id", null] },
+                    { $eq: [{ $type: "$sale_entry.date" }, "date"] },
+                    { $eq: [{ $type: "$sale_entry.seller_id" }, "objectId"] },
                   ],
                 },
                 1,
@@ -296,6 +300,10 @@ const getAllProducts = async (req, res) => {
             },
           },
         },
+
+        // =========================
+        // STEP 2: group by category
+        // =========================
         {
           $group: {
             _id: "$name_id",
@@ -303,30 +311,49 @@ const getAllProducts = async (req, res) => {
             sold: { $sum: "$isSold" },
           },
         },
+
+        // =========================
+        // STEP 3: lookup product name
+        // =========================
         {
           $lookup: {
             from: "productnames",
             localField: "_id",
             foreignField: "_id",
-            as: "categoryData",
+            as: "product",
           },
         },
+
         {
           $unwind: {
-            path: "$categoryData",
+            path: "$product",
             preserveNullAndEmptyArrays: true,
           },
         },
+
+        // =========================
+        // STEP 4: final output
+        // =========================
         {
           $project: {
+            _id: 0,
+
             name_id: "$_id",
+
+            // 🔥 product name from DB
+            name: {
+              $ifNull: ["$product.name", "Unknown"],
+            },
+
             total: 1,
             sold: 1,
+
             category: {
-              $ifNull: ["$categoryData.name", "Unknown"],
+              $ifNull: ["$product.name", "Unknown"],
             },
           },
         },
+
         {
           $sort: { total: -1 },
         },
