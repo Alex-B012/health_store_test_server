@@ -36,18 +36,25 @@ const scanProduct = async (req, res) => {
 
     console.log("product:", product);
 
-    if (!product)
+    if (!product) {
+      await issueLogModel.create({
+        date: new Date(),
+        telegram_id: telegramUser.id,
+        comment: "Отсканирован неизвестный QR-код",
+      });
+
       return res.status(404).json({
         success: false,
         message: "Product not found",
       });
+    }
 
     if (product.sale_entry && product.sale_entry.date) {
       await issueLogModel.create({
         date: new Date(),
         product_id: product._id,
         telegram_id: telegramUser.id,
-        comment: "QR code already assigned",
+        comment: "QR-код уже назначен",
       });
 
       return res.status(409).json({
@@ -67,7 +74,7 @@ const scanProduct = async (req, res) => {
         date: new Date(),
         product_id: product._id,
         telegram_id: telegramUser.id,
-        comment: "QR code scanned is from another pharmacy ",
+        comment: "Отсканированный QR-код принадлежит другой аптеке",
       });
 
       return res.status(400).json({

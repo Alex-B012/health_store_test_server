@@ -5,7 +5,7 @@ const issueLogSchema = new mongoose.Schema({
   product_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Product",
-    required: true,
+    default: null,
   },
   telegram_id: { type: Number, required: true },
   comment: { type: String },

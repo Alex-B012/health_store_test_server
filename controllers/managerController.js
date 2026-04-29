@@ -70,7 +70,7 @@ const getDashboardData = async (req, res) => {
                     _id: 1,
                     salesCount: 1,
                     name: {
-                      $ifNull: ["$seller.name.name", "Unknown Seller"],
+                      $ifNull: ["$seller.name", "Unknown Seller"],
                     },
                   },
                 },
@@ -94,32 +94,58 @@ const getDashboardData = async (req, res) => {
                   },
                 },
                 {
-                  $match: {
-                    "sale_entry.date": { $exists: true, $ne: null },
-                    "sale_entry.seller_id": { $exists: true, $ne: null },
+                  $project: {
+                    sale_entry: 1,
                   },
                 },
               ],
-              as: "soldProducts",
+              as: "products",
             },
           },
-
           {
             $addFields: {
-              productsSold: { $size: "$soldProducts" },
+              totalProducts: { $size: "$products" },
             },
           },
-
+          {
+            $addFields: {
+              soldProducts: {
+                $size: {
+                  $filter: {
+                    input: "$products",
+                    as: "p",
+                    cond: {
+                      $and: [
+                        { $ne: ["$$p.sale_entry", null] },
+                        { $ne: ["$$p.sale_entry.seller_id", null] },
+                        { $gt: ["$$p.sale_entry.date", null] },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+          {
+            $addFields: {
+              leftProducts: {
+                $subtract: ["$totalProducts", "$soldProducts"],
+              },
+            },
+          },
           {
             $project: {
               _id: 1,
               pharmacyNumber: 1,
               pharmacyName: "$name",
-              productsSold: 1,
+              totalProducts: 1,
+              soldProducts: 1,
+              leftProducts: 1,
             },
           },
-
-          { $sort: { productsSold: -1 } },
+          {
+            $sort: { soldProducts: -1 },
+          },
         ]),
 
         pharmacyModel.countDocuments(),
