@@ -355,43 +355,48 @@ const getProductById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    if (!mongoose.Types.ObjectId.isValid(id))
+    // =========================
+    // VALIDATION
+    // =========================
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
         message: "Invalid product name id",
       });
+    }
 
     const objectId = new mongoose.Types.ObjectId(id);
 
+    // =========================
+    // SOLD CONDITION (NEW STANDARD)
+    // =========================
+    const isSoldExpr = {
+      $and: [
+        { $eq: [{ $type: "$sale_entry.date" }, "date"] },
+        { $eq: [{ $type: "$sale_entry.seller_id" }, "objectId"] },
+      ],
+    };
+
     const [productName, stats, pharmacyStats, sellerStats] = await Promise.all([
-      productNameModel.findById(id).lean(),
+      productNameModel.findById(id).select("-__v").lean(),
 
       productModel.aggregate([
         {
           $match: { name_id: objectId },
         },
         {
+          $project: {
+            name_id: 1,
+            isSold: {
+              $cond: [isSoldExpr, 1, 0],
+            },
+          },
+        },
+        {
           $group: {
             _id: "$name_id",
             total: { $sum: 1 },
-            sold: {
-              $sum: {
-                $cond: [
-                  {
-                    $gt: [
-                      {
-                        $strLenCP: {
-                          $ifNull: ["$sale_entry.qr_code", ""],
-                        },
-                      },
-                      0,
-                    ],
-                  },
-                  1,
-                  0,
-                ],
-              },
-            },
+            sold: { $sum: "$isSold" },
           },
         },
         {
@@ -411,27 +416,18 @@ const getProductById = async (req, res) => {
           },
         },
         {
+          $project: {
+            pharmacy_id: 1,
+            isSold: {
+              $cond: [isSoldExpr, 1, 0],
+            },
+          },
+        },
+        {
           $group: {
             _id: "$pharmacy_id",
             total: { $sum: 1 },
-            sold: {
-              $sum: {
-                $cond: [
-                  {
-                    $gt: [
-                      {
-                        $strLenCP: {
-                          $ifNull: ["$sale_entry.qr_code", ""],
-                        },
-                      },
-                      0,
-                    ],
-                  },
-                  1,
-                  0,
-                ],
-              },
-            },
+            sold: { $sum: "$isSold" },
           },
         },
         {
@@ -442,7 +438,12 @@ const getProductById = async (req, res) => {
             as: "pharmacy",
           },
         },
-        { $unwind: { path: "$pharmacy", preserveNullAndEmptyArrays: true } },
+        {
+          $unwind: {
+            path: "$pharmacy",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
         {
           $project: {
             _id: 0,
@@ -453,7 +454,9 @@ const getProductById = async (req, res) => {
             sold: 1,
           },
         },
-        { $sort: { total: -1 } },
+        {
+          $sort: { total: -1 },
+        },
       ]),
 
       productModel.aggregate([
@@ -461,6 +464,14 @@ const getProductById = async (req, res) => {
           $match: {
             name_id: objectId,
             "sale_entry.seller_id": { $ne: null },
+          },
+        },
+        {
+          $project: {
+            sale_entry: 1,
+            isSold: {
+              $cond: [isSoldExpr, 1, 0],
+            },
           },
         },
         {
@@ -473,24 +484,7 @@ const getProductById = async (req, res) => {
         {
           $group: {
             _id: "$seller_id_obj",
-            totalSales: {
-              $sum: {
-                $cond: [
-                  {
-                    $gt: [
-                      {
-                        $strLenCP: {
-                          $ifNull: ["$sale_entry.qr_code", ""],
-                        },
-                      },
-                      0,
-                    ],
-                  },
-                  1,
-                  0,
-                ],
-              },
-            },
+            totalSales: { $sum: "$isSold" },
           },
         },
         {
@@ -501,7 +495,12 @@ const getProductById = async (req, res) => {
             as: "seller",
           },
         },
-        { $unwind: { path: "$seller", preserveNullAndEmptyArrays: true } },
+        {
+          $unwind: {
+            path: "$seller",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
         {
           $lookup: {
             from: "pharmacies",
@@ -510,7 +509,12 @@ const getProductById = async (req, res) => {
             as: "pharmacy",
           },
         },
-        { $unwind: { path: "$pharmacy", preserveNullAndEmptyArrays: true } },
+        {
+          $unwind: {
+            path: "$pharmacy",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
         {
           $project: {
             _id: 0,
@@ -524,15 +528,18 @@ const getProductById = async (req, res) => {
             totalSales: 1,
           },
         },
-        { $sort: { totalSales: -1 } },
+        {
+          $sort: { totalSales: -1 },
+        },
       ]),
     ]);
 
-    if (!productName)
+    if (!productName) {
       return res.status(404).json({
         success: false,
         message: "Product name not found",
       });
+    }
 
     const result = stats[0] || {
       total: 0,
@@ -546,6 +553,7 @@ const getProductById = async (req, res) => {
         name: productName.name,
         brief_description: productName.brief_description || null,
         description: productName.description || null,
+
         stats: result,
         pharmacies: pharmacyStats,
         sellers: sellerStats,
