@@ -869,26 +869,15 @@ const getAllSellers = async (req, res) => {
       productModel.aggregate([
         {
           $match: {
-            "sale_entry.seller_id": { $exists: true, $ne: null },
+            "sale_entry.seller_id": { $ne: null },
+            "sale_entry.date": { $ne: null },
           },
         },
+
         {
           $group: {
             _id: "$sale_entry.seller_id",
-            salesCount: {
-              $sum: {
-                $cond: [
-                  {
-                    $and: [
-                      { $ifNull: ["$sale_entry.qr_code", false] },
-                      { $ne: ["$sale_entry.qr_code", ""] },
-                    ],
-                  },
-                  1,
-                  0,
-                ],
-              },
-            },
+            salesCount: { $sum: 1 },
           },
         },
       ]),
@@ -897,6 +886,7 @@ const getAllSellers = async (req, res) => {
     const countSalesMap = new Map();
 
     counts.forEach((c) => {
+      if (!c._id) return;
       countSalesMap.set(c._id.toString(), c.salesCount);
     });
 
@@ -905,7 +895,7 @@ const getAllSellers = async (req, res) => {
       salesCount: countSalesMap.get(seller._id.toString()) || 0,
     }));
 
-    res.json({
+    return res.json({
       success: true,
       sellers: sellersWithSales,
       sellersNumber: sellers.length,
@@ -930,29 +920,42 @@ const getSellerById = async (req, res) => {
       });
     }
 
+    const sellerObjectId = seller._id; // 🔥 FIX: use real ObjectId
+
+    // =========================
+    // PHARMACY
+    // =========================
     const pharmacyQuery = pharmacyModel
       .findOne({ pharmacyNumber: seller.location_id })
       .select("name -_id")
       .lean();
 
+    // =========================
+    // STATS (FIXED SOLD LOGIC)
+    // =========================
     const statsQuery = productModel.aggregate([
       {
         $match: {
           pharmacy_id: seller.location_id,
         },
       },
+
       {
         $group: {
           _id: null,
+
           totalProducts: { $sum: 1 },
+
+          // =========================
+          // FIX: correct sold logic
+          // =========================
           salesCount: {
             $sum: {
               $cond: [
                 {
                   $and: [
-                    { $eq: ["$sale_entry.seller_id", id] },
-                    { $ifNull: ["$sale_entry.qr_code", false] },
-                    { $ne: ["$sale_entry.qr_code", ""] },
+                    { $eq: ["$sale_entry.seller_id", sellerObjectId] },
+                    { $ne: ["$sale_entry.date", null] }, // 🔥 FIX: real condition
                   ],
                 },
                 1,
@@ -962,6 +965,7 @@ const getSellerById = async (req, res) => {
           },
         },
       },
+
       {
         $project: {
           _id: 0,
@@ -971,24 +975,31 @@ const getSellerById = async (req, res) => {
       },
     ]);
 
+    // =========================
+    // CATEGORY STATS (FIXED)
+    // =========================
     const categoriesQuery = productModel.aggregate([
       {
         $match: {
           pharmacy_id: seller.location_id,
         },
       },
+
       {
         $group: {
           _id: "$name_id",
           total: { $sum: 1 },
+
+          // =========================
+          // FIX: correct sold logic
+          // =========================
           sold: {
             $sum: {
               $cond: [
                 {
                   $and: [
-                    { $eq: ["$sale_entry.seller_id", id] },
-                    { $ifNull: ["$sale_entry.qr_code", false] },
-                    { $ne: ["$sale_entry.qr_code", ""] },
+                    { $eq: ["$sale_entry.seller_id", sellerObjectId] },
+                    { $ne: ["$sale_entry.date", null] },
                   ],
                 },
                 1,
@@ -998,6 +1009,7 @@ const getSellerById = async (req, res) => {
           },
         },
       },
+
       {
         $addFields: {
           soldPercent: {
@@ -1009,6 +1021,7 @@ const getSellerById = async (req, res) => {
           },
         },
       },
+
       {
         $lookup: {
           from: "productnames",
@@ -1017,21 +1030,24 @@ const getSellerById = async (req, res) => {
           as: "productName",
         },
       },
+
       {
         $unwind: {
           path: "$productName",
           preserveNullAndEmptyArrays: true,
         },
       },
+
       {
         $project: {
-          _id: 1,
+          _id: 0,
           name: "$productName.name",
           total: 1,
           sold: 1,
           soldPercent: 1,
         },
       },
+
       {
         $sort: {
           soldPercent: -1,
@@ -1052,7 +1068,7 @@ const getSellerById = async (req, res) => {
       salesCount: 0,
     };
 
-    res.json({
+    return res.json({
       success: true,
       seller: {
         ...seller,
