@@ -7,6 +7,7 @@ import pharmacyModel from "../models/pharmacyModel.js";
 import productModel from "../models/productModel.js";
 import productNameModel from "../models/productNameModel.js";
 import sellerModel from "../models/sellerModel.js";
+import issueLogModel from "../models/issueLogModel.js";
 
 import {
   generateRandomPhone,
@@ -15,183 +16,337 @@ import {
 import { formatDate, handleServerError, uniqueByName } from "../utils/utils.js";
 import { test_getRandomNumber } from "../utils/tests.js";
 import { warehouse_employees } from "../data/data.js";
-import issueLogModel from "../models/issueLogModel.js";
 
 // API to get dashboard data for manager view
 const getDashboardData = async (req, res) => {
   console.log("getDashboardData - start");
 
   try {
-    const [productStats, salesByPharmacy, pharmacyCount, sellerCount] =
-      await Promise.all([
-        productModel.aggregate([
-          {
-            $facet: {
-              totalProducts: [{ $count: "count" }],
+    const [
+      productStats,
+      salesByPharmacy,
+      pharmacyCount,
+      sellerCount,
+      topSalesBySeller,
+    ] = await Promise.all([
+      productModel.aggregate([
+        {
+          $facet: {
+            totalProducts: [{ $count: "count" }],
 
-              totalSales: [
-                {
-                  $match: {
-                    "sale_entry.date": { $ne: null },
-                  },
+            totalSales: [
+              {
+                $match: {
+                  "sale_entry.date": { $ne: null },
                 },
-                { $count: "count" },
-              ],
+              },
+              { $count: "count" },
+            ],
 
-              salesBySeller: [
-                {
-                  $match: {
-                    "sale_entry.seller_id": { $ne: null },
-                    "sale_entry.date": { $ne: null },
+            salesBySeller: [
+              {
+                $match: {
+                  "sale_entry.seller_id": { $ne: null },
+                  "sale_entry.date": { $ne: null },
+                },
+              },
+              {
+                $group: {
+                  _id: "$sale_entry.seller_id",
+                  salesCount: { $sum: 1 },
+                },
+              },
+              {
+                $lookup: {
+                  from: "sellers",
+                  localField: "_id",
+                  foreignField: "_id",
+                  as: "seller",
+                },
+              },
+              {
+                $unwind: {
+                  path: "$seller",
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  salesCount: 1,
+                  name: {
+                    $ifNull: ["$seller.name", "Unknown Seller"],
                   },
                 },
-                {
-                  $group: {
-                    _id: "$sale_entry.seller_id",
-                    salesCount: { $sum: 1 },
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "sellers",
-                    localField: "_id",
-                    foreignField: "_id",
-                    as: "seller",
-                  },
-                },
-                {
-                  $unwind: {
-                    path: "$seller",
-                    preserveNullAndEmptyArrays: true,
-                  },
-                },
-                {
-                  $project: {
-                    _id: 1,
-                    salesCount: 1,
-                    name: {
-                      $ifNull: ["$seller.name", "Unknown Seller"],
-                    },
-                  },
-                },
-                { $sort: { salesCount: -1 } },
-              ],
+              },
+              { $sort: { salesCount: -1 } },
+            ],
 
-              salesByProduct: [
-                {
-                  $match: {
-                    "sale_entry.date": { $ne: null },
+            salesByProduct: [
+              {
+                $match: {
+                  "sale_entry.date": { $ne: null },
+                },
+              },
+              {
+                $group: {
+                  _id: "$name_id",
+                  totalSold: { $sum: 1 },
+                },
+              },
+              {
+                $lookup: {
+                  from: "productnames",
+                  localField: "_id",
+                  foreignField: "_id",
+                  as: "product",
+                },
+              },
+              {
+                $unwind: {
+                  path: "$product",
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              {
+                $project: {
+                  _id: 0,
+                  productId: "$_id",
+                  productName: {
+                    $ifNull: ["$product.name", "Unknown Product"],
                   },
+                  totalSold: 1,
                 },
-                {
-                  $group: {
-                    _id: "$name_id",
-                    totalSold: { $sum: 1 },
-                  },
-                },
-                {
-                  $lookup: {
-                    from: "productnames",
-                    localField: "_id",
-                    foreignField: "_id",
-                    as: "product",
-                  },
-                },
-                {
-                  $unwind: {
-                    path: "$product",
-                    preserveNullAndEmptyArrays: true,
-                  },
-                },
-                {
-                  $project: {
-                    _id: 0,
-                    productId: "$_id",
-                    productName: {
-                      $ifNull: ["$product.name", "Unknown Product"],
-                    },
-                    totalSold: 1,
-                  },
-                },
-                {
-                  $sort: { totalSold: -1 },
-                },
-              ],
-            },
+              },
+              {
+                $sort: { totalSold: -1 },
+              },
+            ],
           },
-        ]),
+        },
+      ]),
 
-        pharmacyModel.aggregate([
-          {
-            $lookup: {
-              from: "products",
-              let: { pharmacyNumber: "$pharmacyNumber" },
-              pipeline: [
-                {
-                  $match: {
-                    $expr: {
-                      $eq: ["$pharmacy_id", "$$pharmacyNumber"],
-                    },
+      pharmacyModel.aggregate([
+        {
+          $lookup: {
+            from: "products",
+            let: { pharmacyNumber: "$pharmacyNumber" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ["$pharmacy_id", "$$pharmacyNumber"],
                   },
                 },
-                {
-                  $project: {
-                    sale_entry: 1,
-                  },
+              },
+              {
+                $project: {
+                  sale_entry: 1,
+                  name_id: 1,
                 },
-              ],
-              as: "products",
-            },
+              },
+            ],
+            as: "products",
           },
-          {
-            $addFields: {
-              totalProducts: { $size: "$products" },
-            },
-          },
-          {
-            $addFields: {
-              soldProducts: {
-                $size: {
-                  $filter: {
-                    input: "$products",
-                    as: "p",
-                    cond: {
-                      $and: [
-                        { $ne: ["$$p.sale_entry", null] },
-                        { $ne: ["$$p.sale_entry.seller_id", null] },
-                        { $gt: ["$$p.sale_entry.date", null] },
+        },
+
+        {
+          $addFields: {
+            soldItems: {
+              $filter: {
+                input: "$products",
+                as: "p",
+                cond: {
+                  $and: [
+                    {
+                      $ne: [
+                        { $ifNull: ["$$p.sale_entry.seller_id", null] },
+                        null,
                       ],
                     },
-                  },
+                    {
+                      $ne: [{ $ifNull: ["$$p.sale_entry.date", null] }, null],
+                    },
+                  ],
                 },
               },
             },
           },
-          {
-            $addFields: {
-              leftProducts: {
-                $subtract: ["$totalProducts", "$soldProducts"],
-              },
-            },
-          },
-          {
-            $project: {
-              _id: 1,
-              pharmacyNumber: 1,
-              pharmacyName: "$name",
-              totalProducts: 1,
-              soldProducts: 1,
-              leftProducts: 1,
-            },
-          },
-          {
-            $sort: { soldProducts: -1 },
-          },
-        ]),
+        },
 
-        pharmacyModel.countDocuments(),
-        sellerModel.countDocuments(),
-      ]);
+        {
+          $addFields: {
+            totalProducts: { $size: "$products" },
+            soldProducts: { $size: "$soldItems" },
+            leftProducts: {
+              $subtract: [{ $size: "$products" }, { $size: "$soldItems" }],
+            },
+          },
+        },
+
+        {
+          $unwind: {
+            path: "$soldItems",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        {
+          $group: {
+            _id: {
+              pharmacyId: "$_id",
+              name_id: "$soldItems.name_id",
+            },
+            pharmacyNumber: { $first: "$pharmacyNumber" },
+            pharmacyName: { $first: "$name" },
+            totalProducts: { $first: "$totalProducts" },
+            soldProducts: { $first: "$soldProducts" },
+            count: { $sum: 1 },
+          },
+        },
+
+        {
+          $sort: { count: -1 },
+        },
+
+        {
+          $group: {
+            _id: "$_id.pharmacyId",
+            pharmacyNumber: { $first: "$pharmacyNumber" },
+            pharmacyName: { $first: "$pharmacyName" },
+            totalProducts: { $first: "$totalProducts" },
+            soldProducts: { $first: "$soldProducts" },
+            topProductId: { $first: "$_id.name_id" },
+            topProductCount: { $first: "$count" },
+          },
+        },
+
+        {
+          $lookup: {
+            from: "productnames",
+            localField: "topProductId",
+            foreignField: "_id",
+            as: "product",
+          },
+        },
+
+        {
+          $unwind: {
+            path: "$product",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        {
+          $project: {
+            _id: 1,
+            pharmacyNumber: 1,
+            pharmacyName: 1,
+            totalProducts: 1,
+            soldProducts: 1,
+            leftProducts: 1,
+
+            mostPopularProduct: {
+              $ifNull: ["$product.name", "No Sales"],
+            },
+
+            mostPopularProductCount: {
+              $ifNull: ["$topProductCount", 0],
+            },
+          },
+        },
+
+        {
+          $sort: { soldProducts: -1 },
+        },
+      ]),
+
+      pharmacyModel.countDocuments(),
+      sellerModel.countDocuments(),
+      productModel.aggregate([
+        {
+          $match: {
+            "sale_entry.date": { $ne: null },
+            "sale_entry.seller_id": { $ne: null },
+          },
+        },
+
+        {
+          $group: {
+            _id: {
+              sellerId: "$sale_entry.seller_id",
+              productId: "$name_id",
+            },
+            count: { $sum: 1 },
+          },
+        },
+
+        {
+          $sort: { count: -1 },
+        },
+
+        {
+          $group: {
+            _id: "$_id.sellerId",
+            topProductId: { $first: "$_id.productId" },
+            topProductCount: { $first: "$count" },
+          },
+        },
+
+        {
+          $lookup: {
+            from: "sellers",
+            localField: "_id",
+            foreignField: "_id",
+            as: "seller",
+          },
+        },
+        {
+          $unwind: {
+            path: "$seller",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        {
+          $lookup: {
+            from: "productnames",
+            localField: "topProductId",
+            foreignField: "_id",
+            as: "product",
+          },
+        },
+        {
+          $unwind: {
+            path: "$product",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        {
+          $project: {
+            _id: 0,
+            sellerId: "$_id",
+
+            sellerName: {
+              $ifNull: ["$seller.name", "Unknown Seller"],
+            },
+
+            mostSoldProduct: {
+              $ifNull: ["$product.name", "No Product"],
+            },
+
+            mostSoldProductCount: {
+              $ifNull: ["$topProductCount", 0],
+            },
+          },
+        },
+
+        {
+          $sort: { mostSoldProductCount: -1 },
+        },
+      ]),
+    ]);
 
     const totalProducts = productStats[0]?.totalProducts?.[0]?.count || 0;
     const totalSales = productStats[0]?.totalSales?.[0]?.count || 0;
@@ -211,6 +366,7 @@ const getDashboardData = async (req, res) => {
         salesBySeller,
         salesByProduct,
         salesByPharmacy: salesByPharmacyData,
+        topSalesBySeller: topSalesBySeller,
       },
     });
   } catch (error) {
@@ -223,10 +379,6 @@ const getAllProducts = async (req, res) => {
   console.log("getAllProducts - start");
 
   try {
-    // =========================
-    // 🔥 DEFINE SOLD CONDITION ONCE (SOURCE OF TRUTH)
-    // =========================
-
     const isSoldExpr = {
       $and: [
         { $eq: [{ $type: "$sale_entry.date" }, "date"] },
@@ -424,21 +576,14 @@ const getProductById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // =========================
-    // VALIDATION
-    // =========================
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id))
       return res.status(400).json({
         success: false,
         message: "Invalid product name id",
       });
-    }
 
     const objectId = new mongoose.Types.ObjectId(id);
 
-    // =========================
-    // SOLD CONDITION (NEW STANDARD)
-    // =========================
     const isSoldExpr = {
       $and: [
         { $eq: [{ $type: "$sale_entry.date" }, "date"] },
@@ -622,7 +767,6 @@ const getProductById = async (req, res) => {
         name: productName.name,
         brief_description: productName.brief_description || null,
         description: productName.description || null,
-
         stats: result,
         pharmacies: pharmacyStats,
         sellers: sellerStats,
@@ -1151,12 +1295,11 @@ const addSeller = async (req, res) => {
     !name?.surname ||
     !employmentPeriod?.startDate ||
     !location_id
-  ) {
+  )
     return res.status(400).json({
       success: false,
       message: "Заполните все обязательные поля!",
     });
-  }
 
   try {
     const sellers = await sellerModel
@@ -1172,12 +1315,11 @@ const addSeller = async (req, res) => {
     if (telegram_id) {
       const parsedId = Number(telegram_id);
 
-      if (telegramIds.includes(parsedId)) {
+      if (telegramIds.includes(parsedId))
         return res.status(400).json({
           success: false,
           message: "Telegram ID уже существует",
         });
-      }
 
       finalTelegramId = parsedId;
     } else {
@@ -1187,12 +1329,11 @@ const addSeller = async (req, res) => {
     let finalPhone;
 
     if (phone) {
-      if (phones.includes(phone)) {
+      if (phones.includes(phone))
         return res.status(400).json({
           success: false,
           message: "Телефон уже существует",
         });
-      }
 
       finalPhone = phone;
     } else {
