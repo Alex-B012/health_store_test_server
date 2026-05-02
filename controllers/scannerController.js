@@ -54,7 +54,7 @@ const scanProduct = async (req, res) => {
         date: new Date(),
         product_id: product._id,
         telegram_id: telegramUser.id,
-        comment: "QR-код уже назначен",
+        comment: "QR-код отсканирован повторно",
       });
 
       return res.status(409).json({
@@ -74,7 +74,7 @@ const scanProduct = async (req, res) => {
         date: new Date(),
         product_id: product._id,
         telegram_id: telegramUser.id,
-        comment: "Отсканированный QR-код принадлежит другой аптеке",
+        comment: "QR-код принадлежит другой аптеке",
       });
 
       return res.status(400).json({
