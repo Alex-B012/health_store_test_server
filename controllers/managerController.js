@@ -1242,7 +1242,7 @@ const getSellerById = async (req, res) => {
 
       {
         $project: {
-          _id: 0,
+          _id: 1,
           name: "$productName.name",
           total: 1,
           sold: 1,

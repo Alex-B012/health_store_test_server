@@ -23,95 +23,78 @@ import { requireRole } from "../middlewares/authUser.js";
 const managerRouter = express.Router();
 const upload = multer({ dest: "uploads/" });
 
+const useAuth = process.env.USE_AUTH === "true";
+
+console.log();
+
+const withAuth = (roles = []) => {
+  if (!useAuth) return [];
+  return [telegramAuth(), requireRole(roles)];
+};
+
 managerRouter.get(
   "/dashboard",
-  // telegramAuth(),
-  // requireRole(["manager", "admin"]),
+  ...withAuth(["manager", "admin"]),
   getDashboardData,
 );
 
 managerRouter.get(
   "/products",
-  // telegramAuth(),
-  // requireRole(["manager", "admin"]),
+  ...withAuth(["manager", "admin"]),
   getAllProducts,
 );
 
 managerRouter.get(
   "/products/:id",
-  // telegramAuth(),
-  // requireRole(["manager", "admin"]),
+  ...withAuth(["manager", "admin"]),
   getProductById,
 );
 
 managerRouter.post(
   "/products",
   upload.single("file"),
-  // telegramAuth(),
-  // requireRole(["manager", "admin"]),
+  ...withAuth(["manager", "admin"]),
   addProducts,
 );
 
 managerRouter.get(
   "/products-add-data",
-  // telegramAuth(),
-  // requireRole(["manager", "admin"]),
+  ...withAuth(["manager", "admin"]),
   getProductsAddData,
 );
 
-managerRouter.get(
-  "/sellers",
-  // telegramAuth(),
-  // requireRole(["manager", "admin"]),
-  getAllSellers,
-);
+managerRouter.get("/sellers", ...withAuth(["manager", "admin"]), getAllSellers);
 
 managerRouter.get(
   "/sellers/:id",
-  // telegramAuth(),
-  // requireRole(["manager", "admin"]),
+  ...withAuth(["manager", "admin"]),
   getSellerById,
 );
-managerRouter.post(
-  "/seller",
-  // telegramAuth(),
-  // requireRole(["manager", "admin"]),
-  addSeller,
-);
+managerRouter.post("/seller", ...withAuth(["manager", "admin"]), addSeller);
 managerRouter.get(
   "/pharmacies",
-  // telegramAuth(),
-  // requireRole(["manager", "admin"]),
+  ...withAuth(["manager", "admin"]),
   getAllPharmacies,
 );
 managerRouter.get(
   "/pharmacies/:id",
-  // telegramAuth(),
-  // requireRole(["manager", "admin"]),
+  ...withAuth(["manager", "admin"]),
   getPharmacyById,
 );
 managerRouter.get(
   "/pharmacies-add-seller",
-  // telegramAuth(),
-  // requireRole(["manager", "admin"]),
+  ...withAuth(["manager", "admin"]),
   getAllPharmacies_addSeller,
 );
 managerRouter.get(
   "/managers",
-  // telegramAuth(),
-  // requireRole(["manager", "admin"]),
+  ...withAuth(["manager", "admin"]),
   getAllManagers,
 );
-managerRouter.get(
-  "/admins",
-  // telegramAuth(),
-  // requireRole(["manager", "admin"]),
-  getAllAdmins,
-);
+managerRouter.get("/admins", ...withAuth(["manager", "admin"]), getAllAdmins);
 managerRouter.get(
   "/conflicts",
-  // telegramAuth(),
-  // requireRole(["manager", "admin"]),
+  ...withAuth(["manager", "admin"]),
   getAllConflicts,
 );
 
