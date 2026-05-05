@@ -583,7 +583,18 @@ const getProductById = async (req, res) => {
         message: "Invalid product name id",
       });
 
-    const objectId = new mongoose.Types.ObjectId(id);
+    const productName = await productNameModel
+      .findById(id)
+      .select("-__v")
+      .lean();
+
+    if (!productName)
+      return res.status(404).json({
+        success: false,
+        message: "Product name not found",
+      });
+
+    const nameId = productName.name_id; // ✅ THIS is the correct key
 
     const isSoldExpr = {
       $and: [
@@ -592,19 +603,18 @@ const getProductById = async (req, res) => {
       ],
     };
 
-    const [productName, stats, pharmacyStats, sellerStats] = await Promise.all([
-      productNameModel.findById(id).select("-__v").lean(),
-
+    const [stats, pharmacyStats, sellerStats] = await Promise.all([
+      // ======================
+      // PRODUCT STATS
+      // ======================
       productModel.aggregate([
         {
-          $match: { name_id: objectId },
+          $match: { name_id: nameId }, // ✅ FIXED (Number, not ObjectId)
         },
         {
           $project: {
             name_id: 1,
-            isSold: {
-              $cond: [isSoldExpr, 1, 0],
-            },
+            isSold: { $cond: [isSoldExpr, 1, 0] },
           },
         },
         {
@@ -623,19 +633,20 @@ const getProductById = async (req, res) => {
         },
       ]),
 
+      // ======================
+      // PHARMACY STATS
+      // ======================
       productModel.aggregate([
         {
           $match: {
-            name_id: objectId,
+            name_id: nameId, // ✅ FIXED
             pharmacy_id: { $ne: null },
           },
         },
         {
           $project: {
             pharmacy_id: 1,
-            isSold: {
-              $cond: [isSoldExpr, 1, 0],
-            },
+            isSold: { $cond: [isSoldExpr, 1, 0] },
           },
         },
         {
@@ -674,19 +685,20 @@ const getProductById = async (req, res) => {
         },
       ]),
 
+      // ======================
+      // SELLER STATS
+      // ======================
       productModel.aggregate([
         {
           $match: {
-            name_id: objectId,
+            name_id: nameId, // ✅ FIXED
             "sale_entry.seller_id": { $ne: null },
           },
         },
         {
           $project: {
             sale_entry: 1,
-            isSold: {
-              $cond: [isSoldExpr, 1, 0],
-            },
+            isSold: { $cond: [isSoldExpr, 1, 0] },
           },
         },
         {
@@ -749,13 +761,6 @@ const getProductById = async (req, res) => {
       ]),
     ]);
 
-    if (!productName) {
-      return res.status(404).json({
-        success: false,
-        message: "Product name not found",
-      });
-    }
-
     const result = stats[0] || {
       total: 0,
       sold: 0,
@@ -802,7 +807,7 @@ const addProducts = async (req, res) => {
 
     const productsNames = await productNameModel
       .find({})
-      .select("_id name")
+      .select("_id name name_id")
       .lean();
 
     const pharmacies = await pharmacyModel
@@ -814,7 +819,7 @@ const addProducts = async (req, res) => {
 
     const documents = parsedData.map((item) => ({
       name: productsNames.find((p) => p._id.toString() === product)?.name,
-      name_id: product,
+      name_id: productsNames.find((p) => p._id.toString() === product)?.name_id,
       stock_entry: {
         qr_code: `${formattedDate}_${item.code}`,
         date: new Date(date),
