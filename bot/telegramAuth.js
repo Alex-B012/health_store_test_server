@@ -79,4 +79,26 @@ function telegramAuth() {
   };
 }
 
-export default telegramAuth;
+// Middleware factory (permission-aware) for a bot call
+async function telegramAuth_bot(id) {
+  console.log("telegramAuth_bot - start");
+
+  const telegram_id = String(id);
+
+  const role_seller = await sellerModel.findOne({ telegram_id });
+  const role_admin = await adminModel.findOne({ admin_id: telegram_id });
+
+  let role_manager = null;
+
+  if (!role_seller && !role_admin)
+    role_manager = await managerModel.findOne({ telegram_id });
+
+  if (!role_seller && !role_admin && !role_manager)
+    return "No permissions assigned";
+
+  const result = role_admin ? "admin" : role_seller ? "seller" : "manager";
+
+  return result;
+}
+
+export { telegramAuth, telegramAuth_bot };

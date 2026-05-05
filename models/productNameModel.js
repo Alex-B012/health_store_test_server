@@ -6,6 +6,7 @@ const productNameSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  name_id: { type: Number, required: true, trim: true },
   brief_description: {
     type: String,
     default: "",
@@ -16,7 +17,7 @@ const productNameSchema = new mongoose.Schema({
   },
 });
 
-productNameSchema.index({ name: 1 }, { unique: true });
+productNameSchema.index({ name_id: 1 }, { unique: true });
 
 const productNameModel =
   mongoose.models.ProductName ||

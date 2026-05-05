@@ -1,5 +1,5 @@
 import express from "express";
-import telegramAuth from "../bot/telegramAuth.js";
+import { telegramAuth } from "../bot/telegramAuth.js";
 import { scanProduct, getProfile } from "../controllers/scannerController.js";
 import { requireRole } from "../middlewares/authUser.js";
 

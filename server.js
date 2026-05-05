@@ -30,6 +30,7 @@ import {
   populateProductNames,
 } from "./db_service/service.js";
 import managerRouter from "./routes/managerRoute.js";
+import { telegramAuth_bot } from "./bot/telegramAuth.js";
 
 dotenv.config();
 
@@ -77,6 +78,7 @@ app.use(express.json());
 
 bot.setWebHook(`${SERVER_URL}/bot${TOKEN}`);
 
+// CORS
 // app.use((req, res, next) => {
 //   console.log("Request origin:", req.headers.origin);
 //   next();
@@ -154,7 +156,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message });
 });
 
-bot.on("message", (msg) => {
+bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
   const text = msg.text;
@@ -164,74 +166,94 @@ bot.on("message", (msg) => {
     text,
     "\n",
     `userId=${userId}:`,
-    // userId,
   );
 
   if (text === "/start") {
-    const isAllowedChat = parseEnvArray(CHAT_IDS)
-      .map((id) => id.trim())
-      .includes(chatId.toString());
-    const isAuthorized = isAuthorizedSeller(SELLERS, userId);
+    const isAuthorized = await telegramAuth_bot(userId);
 
-    const chatIdsArray = parseEnvArray(CHAT_IDS);
+    console.log("isAuthorized - ", isAuthorized);
 
-    // console.log(
-    //   "chatId:",
-    //   `'${chatId.toString()}' (type: ${typeof chatId.toString()})`,
-    // );
-    // chatIdsArray.forEach((id, index) => {
-    //   console.log(`Element ${index}: '${id}' (type: ${typeof id})`);
-    // });
-
-    // console.log("Type:", typeof parseEnvArray(CHAT_IDS));
-    // console.log("parseEnvArray(CHAT_IDS)", parseEnvArray(CHAT_IDS));
-
-    // console.log("isAllowedChat:", isAllowedChat);
-
-    console.log(
-      "isAuthorized - ",
-      isAuthorized,
-      "isAllowedChat - ",
-      isAllowedChat,
-    );
-
-    if (!isAllowedChat)
+    if (isAuthorized === "No permissions assigned")
       return bot.sendMessage(
         chatId,
         `Unauthorized access. You are not registered as a seller.\n
-        Your Telegram Chat ID: ${chatId}.\n
+        Your Telegram user ID: ${userId}.\n
         Please send this ID to the admin to complete your registration.`,
       );
 
-    return bot.sendMessage(
-      chatId,
-      `<b>━━ </b><b> AKIS Pharma -- Demo </b><b> ━━</b>\n\nВыберите действие:`,
-      {
-        parse_mode: "HTML",
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "Открыть Сканер",
-                web_app: { url: `${SCANNER_URL}` },
-              },
+    if (isAuthorized === "admin") {
+      return bot.sendMessage(
+        chatId,
+        `<b>━━ </b><b> AKIS Pharma -- Demo </b><b> ━━</b>\n\nВыберите действие:`,
+        {
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "Открыть Сканер",
+                  web_app: { url: `${SCANNER_URL}` },
+                },
+              ],
+              [
+                {
+                  text: "Добавить продавца",
+                  web_app: { url: `${MANAGER_URL_APP}/add-seller` },
+                },
+              ],
+              [
+                {
+                  text: "Панель Менеджера",
+                  web_app: { url: `${MANAGER_URL_APP}` },
+                },
+              ],
             ],
-            [
-              {
-                text: "Добавить продавца",
-                web_app: { url: `${MANAGER_URL_APP}/add-seller` },
-              },
-            ],
-            [
-              {
-                text: "Панель Менеджера",
-                web_app: { url: `${MANAGER_URL_APP}` },
-              },
-            ],
-          ],
+          },
         },
-      },
-    );
+      );
+    } else if (isAuthorized === "seller") {
+      return bot.sendMessage(
+        chatId,
+        `<b>━━ </b><b> AKIS Pharma -- Demo </b><b> ━━</b>\n\nВыберите действие:`,
+        {
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "Открыть Сканер",
+                  web_app: { url: `${SCANNER_URL}` },
+                },
+              ],
+            ],
+          },
+        },
+      );
+    } else if (isAuthorized === "manager") {
+      return bot.sendMessage(
+        chatId,
+        `<b>━━ </b><b> AKIS Pharma -- Demo </b><b> ━━</b>\n\nВыберите действие:`,
+        {
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "Добавить продавца",
+                  web_app: { url: `${MANAGER_URL_APP}/add-seller` },
+                },
+              ],
+              [
+                {
+                  text: "Панель Менеджера",
+                  web_app: { url: `${MANAGER_URL_APP}` },
+                },
+              ],
+            ],
+          },
+        },
+      );
+    }
   } else if (text === "/admin") {
     return bot.sendMessage(chatId, `Admin command received: ${text}`);
   } else if (text === "/super_secret_demo") {
@@ -265,9 +287,6 @@ bot.on("message", (msg) => {
       },
     );
   }
-
-  if (!checkChatId(chatId))
-    return console.log("Received message from unauthorized Chat ID:", chatId);
 
   bot.sendMessage(chatId, `Message received: ${text}`);
 });

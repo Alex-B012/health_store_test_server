@@ -17,15 +17,13 @@ import {
   getAllConflicts,
 } from "../controllers/managerController.js";
 
-import telegramAuth from "../bot/telegramAuth.js";
+import { telegramAuth } from "../bot/telegramAuth.js";
 import { requireRole } from "../middlewares/authUser.js";
 
 const managerRouter = express.Router();
 const upload = multer({ dest: "uploads/" });
 
 const useAuth = process.env.USE_AUTH === "true";
-
-console.log();
 
 const withAuth = (roles = []) => {
   if (!useAuth) return [];

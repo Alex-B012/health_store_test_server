@@ -2,8 +2,7 @@ import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema({
   name_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "ProductName",
+    type: Number,
     required: true,
   },
   stock_entry: {

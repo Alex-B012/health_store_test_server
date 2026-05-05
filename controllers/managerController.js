@@ -98,7 +98,7 @@ const getDashboardData = async (req, res) => {
                 $lookup: {
                   from: "productnames",
                   localField: "_id",
-                  foreignField: "_id",
+                  foreignField: "name_id",
                   as: "product",
                 },
               },
@@ -225,7 +225,7 @@ const getDashboardData = async (req, res) => {
           $lookup: {
             from: "productnames",
             localField: "topProductId",
-            foreignField: "_id",
+            foreignField: "name_id",
             as: "product",
           },
         },
@@ -312,7 +312,7 @@ const getDashboardData = async (req, res) => {
           $lookup: {
             from: "productnames",
             localField: "topProductId",
-            foreignField: "_id",
+            foreignField: "name_id",
             as: "product",
           },
         },
@@ -395,15 +395,19 @@ const getAllProducts = async (req, res) => {
         .limit(100)
         .select("-__v")
         .populate({
-          path: "name_id",
-          select: "name",
-          model: "ProductName",
-        })
-        .populate({
           path: "sale_entry.seller_id",
           select: "name",
           model: "seller",
         })
+        .populate({
+          path: "name_id",
+          select: "name name_id",
+          model: "ProductName",
+          localField: "name_id",
+          foreignField: "name_id",
+          justOne: true,
+        })
+
         .lean(),
 
       sellerModel.find({}).select("_id name").lean(),
@@ -507,7 +511,7 @@ const getAllProducts = async (req, res) => {
           $lookup: {
             from: "productnames",
             localField: "_id",
-            foreignField: "_id",
+            foreignField: "name_id",
             as: "product",
           },
         },
@@ -521,11 +525,8 @@ const getAllProducts = async (req, res) => {
 
         {
           $project: {
-            _id: 0,
+            _id: "$product._id",
             name_id: "$_id",
-            name: {
-              $ifNull: ["$product.name", "Unknown"],
-            },
             total: 1,
             sold: 1,
             category: {
