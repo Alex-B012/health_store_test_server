@@ -996,11 +996,6 @@ const getPharmacyById = async (req, res) => {
           pharmacy_id: pharmacyNumber,
         })
         .select("name_id sale_entry")
-        .populate({
-          path: "name_id",
-          select: "name",
-          model: "ProductName",
-        })
         .lean(),
 
       sellerModel
@@ -1014,34 +1009,56 @@ const getPharmacyById = async (req, res) => {
     const productMap = new Map();
     const sellerSalesMap = new Map();
 
+    const productNames = await productNameModel
+      .find({})
+      .select("_id name_id name")
+      .lean();
+
+    const nameMap = new Map();
+    productNames.forEach((p) => {
+      nameMap.set(p.name_id, {
+        _id: p._id,
+        name: p.name,
+      });
+    });
+
     products.forEach((product) => {
-      const key = product.name_id?._id?.toString();
+      const key = product.name_id;
+
       if (!key) return;
+
+      const productName = nameMap.get(key);
 
       if (!productMap.has(key)) {
         productMap.set(key, {
-          _id: product.name_id._id,
-          name: product.name_id.name,
+          _id: productName?._id || null,
+          name_id: key,
+          name: productName?.name || "Unknown",
           total: 0,
           sold: 0,
         });
       }
 
       const entry = productMap.get(key);
+
       entry.total += 1;
 
       const isSold = product.sale_entry?.date && product.sale_entry?.seller_id;
 
       if (isSold) {
         entry.sold += 1;
+
         const sellerId = product.sale_entry.seller_id?.toString();
 
-        if (sellerId)
+        if (sellerId) {
           sellerSalesMap.set(sellerId, (sellerSalesMap.get(sellerId) || 0) + 1);
+        }
       }
     });
 
-    const productStats = Array.from(productMap.values());
+    const productStats = Array.from(productMap.values()).sort(
+      (a, b) => b.sold - a.sold || b.total - a.total,
+    );
 
     const enrichedSellers = sellers.map((seller) => {
       const sellerKey = seller._id?.toString();
@@ -1234,7 +1251,7 @@ const getSellerById = async (req, res) => {
         $lookup: {
           from: "productnames",
           localField: "_id",
-          foreignField: "_id",
+          foreignField: "name_id",
           as: "productName",
         },
       },
@@ -1248,7 +1265,8 @@ const getSellerById = async (req, res) => {
 
       {
         $project: {
-          _id: 1,
+          _id: "$productName._id",
+          name_id: "$_id",
           name: "$productName.name",
           total: 1,
           sold: 1,
