@@ -1,3 +1,18 @@
+import Counter from "../models/Counter.js";
+
+async function getNextSequence(name) {
+  const result = await Counter.findOneAndUpdate(
+    { _id: name },
+    { $inc: { seq: 7 } },
+    {
+      upsert: true,
+      returnDocument: "after",
+    },
+  );
+
+  return result.seq;
+}
+
 // Generate random QR code
 const generateQRCode = () => {
   const chars =
@@ -51,6 +66,7 @@ const generateRandomPhone = () => {
 };
 
 export {
+  getNextSequence,
   generateQRCode,
   getRandomFromArray,
   getRandomDate,

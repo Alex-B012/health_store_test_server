@@ -13,8 +13,9 @@ import {
   getAllAdmins,
   getProductsAddData,
   getProductCategoriesAddData,
-  addProducts,
   getSellerById,
+  addProducts,
+  addProductCategory,
   getAllConflicts,
 } from "../controllers/managerController.js";
 
@@ -27,6 +28,7 @@ const upload = multer({ dest: "uploads/" });
 const useAuth = process.env.USE_AUTH === "true";
 
 const withAuth = (roles = []) => {
+  console.log("withAuth - start");
   if (!useAuth) return [];
   return [telegramAuth(), requireRole(roles)];
 };
@@ -66,6 +68,12 @@ managerRouter.get(
   "/products-categories-add-data",
   ...withAuth(["manager", "admin"]),
   getProductCategoriesAddData,
+);
+
+managerRouter.post(
+  "/add-product-category",
+  ...withAuth(["manager", "admin"]),
+  addProductCategory,
 );
 
 managerRouter.get("/sellers", ...withAuth(["manager", "admin"]), getAllSellers);

@@ -11,11 +11,16 @@ import issueLogModel from "../models/issueLogModel.js";
 
 import {
   generateRandomPhone,
+  getNextSequence,
   getRandomTelegramId,
 } from "../db_service/db_utils.js";
 import { formatDate, handleServerError, uniqueByName } from "../utils/utils.js";
 import { test_getRandomNumber } from "../utils/tests.js";
 import { warehouse_employees } from "../data/data.js";
+
+const COUNTERS = {
+  PRODUCT_NAME: "productName",
+};
 
 // API to get dashboard data for manager view
 const getDashboardData = async (req, res) => {
@@ -908,6 +913,48 @@ const getProductCategoriesAddData = async (req, res) => {
   }
 };
 
+const addProductCategory = async (req, res) => {
+  console.log("addProductCategory - start");
+
+  try {
+    const { name, shortDescription, description } = req.body;
+    const requiredFields = { name };
+
+    const missingFields = Object.entries(requiredFields)
+      .filter(([_, value]) => typeof value !== "string" || value.trim() === "")
+      .map(([key]) => key);
+
+    if (missingFields.length > 0)
+      throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
+
+    const result = await productNameModel.aggregate([
+      { $sort: { name_id: -1 } },
+      { $limit: 1 },
+      { $project: { name_id: 1 } },
+    ]);
+
+    const nameId = await getNextSequence(COUNTERS.PRODUCT_NAME);
+
+    const document = {
+      name,
+      name_id: nameId,
+      brief_description: shortDescription?.trim() || null,
+      description: description?.trim() || null,
+    };
+
+    console.log("document:", document);
+
+    const savedProduct = await productNameModel.create(document);
+
+    res.status(200).json({
+      success: true,
+      result: savedProduct,
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
 const getProductByPharmacyId = async (req, res) => {
   const { id } = req.params;
   try {
@@ -1576,6 +1623,7 @@ export {
   getProductsAddData,
   getProductCategoriesAddData,
   addProducts,
+  addProductCategory,
   getDashboardData,
   getAllConflicts,
 };
