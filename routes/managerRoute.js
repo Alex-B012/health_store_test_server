@@ -12,6 +12,7 @@ import {
   getAllManagers,
   getAllAdmins,
   getProductsAddData,
+  getProductCategoriesAddData,
   addProducts,
   getSellerById,
   getAllConflicts,
@@ -59,6 +60,12 @@ managerRouter.get(
   "/products-add-data",
   ...withAuth(["manager", "admin"]),
   getProductsAddData,
+);
+
+managerRouter.get(
+  "/products-categories-add-data",
+  ...withAuth(["manager", "admin"]),
+  getProductCategoriesAddData,
 );
 
 managerRouter.get("/sellers", ...withAuth(["manager", "admin"]), getAllSellers);

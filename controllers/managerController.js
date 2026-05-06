@@ -891,6 +891,23 @@ const getProductsAddData = async (req, res) => {
   }
 };
 
+const getProductCategoriesAddData = async (req, res) => {
+  try {
+    const productsNames = await productNameModel
+      .find({})
+      .select("-__v")
+      .sort({ name: 1 })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      categories: uniqueByName(productsNames),
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
 const getProductByPharmacyId = async (req, res) => {
   const { id } = req.params;
   try {
@@ -1557,6 +1574,7 @@ export {
   getAllManagers,
   getAllAdmins,
   getProductsAddData,
+  getProductCategoriesAddData,
   addProducts,
   getDashboardData,
   getAllConflicts,
