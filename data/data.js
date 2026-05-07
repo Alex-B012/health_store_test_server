@@ -141,6 +141,7 @@ const PRODUCTS_NAMES = [
 
 const SELLERS = [
   {
+    id: 9,
     name: { firstName: "Насрулло", patronymic: "", lastName: "Акис" },
     dob: new Date("2011-02-04"),
     employmentPeriod: {
@@ -153,6 +154,7 @@ const SELLERS = [
     phone: "+75550145827",
   },
   {
+    id: 1,
     name: { firstName: "Иван", patronymic: "Сергеевич", lastName: "Петров" },
     dob: new Date("1990-04-12"),
     employmentPeriod: {
@@ -165,6 +167,7 @@ const SELLERS = [
     phone: "+79154823910",
   },
   {
+    id: 2,
     name: { firstName: "Анна", patronymic: "Сергеевна", lastName: "Иванова" },
     dob: new Date("1992-05-17"),
     employmentPeriod: {
@@ -177,6 +180,7 @@ const SELLERS = [
     phone: "+79267405183",
   },
   {
+    id: 3,
     name: {
       firstName: "Дмитрий",
       patronymic: "Александрович",
@@ -193,6 +197,7 @@ const SELLERS = [
     phone: "+75551846674",
   },
   {
+    id: 4,
     name: {
       firstName: "Сергей",
       patronymic: "Николаевич",
@@ -209,6 +214,7 @@ const SELLERS = [
     phone: "+79095529041",
   },
   {
+    id: 5,
     name: {
       firstName: "Екатерина",
       patronymic: "Дмитриевна",
@@ -225,6 +231,7 @@ const SELLERS = [
     phone: "+79853047712",
   },
   {
+    id: 6,
     name: {
       firstName: "Алексей",
       patronymic: "Дмитриевич",
@@ -241,6 +248,7 @@ const SELLERS = [
     phone: "+79166632095",
   },
   {
+    id: 7,
     name: { firstName: "Мария", patronymic: "Павловна", lastName: "Соколова" },
     dob: new Date("1995-02-25"),
     employmentPeriod: {
@@ -253,6 +261,7 @@ const SELLERS = [
     phone: "+79254801936",
   },
   {
+    id: 8,
     name: {
       firstName: "Анастасия",
       patronymic: "Игоревна",

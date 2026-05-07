@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const sellerSchema = new mongoose.Schema({
+  id: { type: Number, required: true },
   name: {
     firstName: { type: String, required: [true, "Укажите имя"] },
     patronymic: { type: String, required: false },
@@ -28,6 +29,7 @@ const sellerSchema = new mongoose.Schema({
   },
 });
 
+sellerSchema.index({ id: 1 }, { unique: true });
 sellerSchema.index({ telegram_id: 1 }, { unique: true });
 
 const sellerModel =
