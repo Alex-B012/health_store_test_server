@@ -1474,9 +1474,12 @@ const addSeller = async (req, res) => {
       });
     }
 
-    const normalizedPhone = phone?.trim();
+    const normalizedPhone = phone ? phone.replace(/\s+/g, "").trim() : null;
+
     if (normalizedPhone) {
-      const existingPhone = await sellerModel.findOne({ normalizedPhone });
+      const existingPhone = await sellerModel.findOne({
+        phone: normalizedPhone,
+      });
 
       if (existingPhone) {
         return res.status(400).json({
