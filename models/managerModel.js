@@ -11,7 +11,7 @@ const managerSchema = new mongoose.Schema({
   },
   employmentPeriod: {
     status: { type: String, enum: ["active", "inactive"], default: "active" },
-    startDate: { type: Date, required: true },
+    startDate: { type: Date },
     endDate: { type: Date },
   },
   location_id: { type: Number },

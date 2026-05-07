@@ -1548,6 +1548,71 @@ const getAllManagers = async (req, res) => {
   }
 };
 
+const getAddManagerData = async (req, res) => {
+  console.log("getAddManagerData - start");
+  try {
+    const pharmacies = await pharmacyModel
+      .find({})
+      .select("name pharmacyNumber -_id")
+      .sort({ pharmacyNumber: 1 })
+      .lean();
+
+    res.json({ success: true, pharmacies });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
+const addManager = async (req, res) => {
+  console.log("addManager - start");
+
+  try {
+    const { name, dob, employmentPeriod, location_id, telegram_id } = req.body;
+
+    if (
+      !name?.name ||
+      !name?.surname ||
+      telegram_id === undefined ||
+      telegram_id === null ||
+      telegram_id === ""
+    )
+      return res.status(400).json({
+        success: false,
+        message: "Заполните все обязательные поля!",
+      });
+
+    if (!/^\d{8}$/.test(String(telegram_id))) {
+      return res.status(400).json({
+        success: false,
+        message: "Telegram ID должен содержать 8 цифр",
+      });
+    }
+
+    const existingManager = await managerModel.findOne({
+      telegram_id: Number(telegram_id),
+    });
+
+    if (existingManager) {
+      return res.status(400).json({
+        success: false,
+        message: "Менеджер с таким Telegram ID уже существует",
+      });
+    }
+
+    const manager = await managerModel.create({
+      name,
+      dob: dob || null,
+      employmentPeriod,
+      location_id: location_id ? Number(location_id) : null,
+      telegram_id: Number(telegram_id),
+    });
+
+    res.status(201).json({ success: true, manager });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
 const getAllAdmins = async (req, res) => {
   console.log("getAllAdmins - start");
   try {
@@ -1690,6 +1755,8 @@ export {
   deleteSeller,
   getAllPharmacies_addSeller,
   getAllManagers,
+  getAddManagerData,
+  addManager,
   getAllAdmins,
   getProductsAddData,
   getProductCategoriesAddData,

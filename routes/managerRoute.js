@@ -12,6 +12,8 @@ import {
   addSeller,
   getAllPharmacies_addSeller,
   getAllManagers,
+  getAddManagerData,
+  addManager,
   getAllAdmins,
   getProductsAddData,
   getProductCategoriesAddData,
@@ -120,6 +122,15 @@ managerRouter.get(
   ...withAuth(["manager", "admin"]),
   getAllManagers,
 );
+
+managerRouter.get(
+  "/manager-add-data",
+  ...withAuth(["admin"]),
+  getAddManagerData,
+);
+
+managerRouter.post("/manager", ...withAuth(["admin"]), addManager);
+
 managerRouter.get("/admins", ...withAuth(["manager", "admin"]), getAllAdmins);
 managerRouter.get(
   "/conflicts",
