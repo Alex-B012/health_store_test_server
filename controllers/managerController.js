@@ -1448,59 +1448,42 @@ const addSeller = async (req, res) => {
     req.body;
 
   if (
-    !name?.name ||
-    !name?.surname ||
+    !telegram_id ||
+    !name?.firstName ||
+    !name?.lastName ||
     !employmentPeriod?.startDate ||
     !location_id
-  )
+  ) {
     return res.status(400).json({
       success: false,
       message: "Заполните все обязательные поля!",
     });
+  }
 
   try {
-    const sellers = await sellerModel
-      .find({})
-      .select("telegram_id phone -_id")
-      .lean();
+    const parsedTelegramId = Number(telegram_id);
 
-    const telegramIds = sellers.map((s) => s.telegram_id);
-    const phones = sellers.map((s) => s.phone);
+    const existingTelegram = await sellerModel.findOne({
+      telegram_id: parsedTelegramId,
+    });
 
-    let finalTelegramId;
-
-    if (telegram_id) {
-      const parsedId = Number(telegram_id);
-
-      if (telegramIds.includes(parsedId))
-        return res.status(400).json({
-          success: false,
-          message: "Telegram ID уже существует",
-        });
-
-      finalTelegramId = parsedId;
-    } else {
-      finalTelegramId = getRandomTelegramId(telegramIds);
+    if (existingTelegram) {
+      return res.status(400).json({
+        success: false,
+        message: "Telegram ID уже существует",
+      });
     }
 
-    let finalPhone;
+    const normalizedPhone = phone?.trim();
+    if (normalizedPhone) {
+      const existingPhone = await sellerModel.findOne({ normalizedPhone });
 
-    if (phone) {
-      if (phones.includes(phone))
+      if (existingPhone) {
         return res.status(400).json({
           success: false,
           message: "Телефон уже существует",
         });
-
-      finalPhone = phone;
-    } else {
-      let generatedPhone;
-
-      do {
-        generatedPhone = generateRandomPhone();
-      } while (phones.includes(generatedPhone));
-
-      finalPhone = generatedPhone;
+      }
     }
 
     const seller = await sellerModel.create({
@@ -1508,11 +1491,14 @@ const addSeller = async (req, res) => {
       dob: dob || null,
       employmentPeriod,
       location_id: Number(location_id),
-      telegram_id: finalTelegramId,
-      phone: finalPhone,
+      telegram_id: parsedTelegramId,
+      phone: normalizedPhone || null,
     });
 
-    res.status(201).json({ success: true, seller });
+    return res.status(201).json({
+      success: true,
+      seller,
+    });
   } catch (error) {
     handleServerError(res, error);
   }
