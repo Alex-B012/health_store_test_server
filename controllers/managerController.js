@@ -1149,6 +1149,75 @@ const getPharmacyById = async (req, res) => {
   }
 };
 
+const getAddPharmaciesData = async (req, res) => {
+  try {
+    const pharmacyNumbers = await pharmacyModel.distinct("pharmacyNumber");
+
+    return res.json({
+      success: true,
+      pharmacyData: pharmacyNumbers,
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
+const addPharmacy = async (req, res) => {
+  console.log("addPharmacy - start");
+  try {
+    const {
+      name,
+      pharmacyNumber,
+      address,
+      contact,
+      management,
+      businessHours,
+    } = req.body;
+
+    const requiredFields = { name, pharmacyNumber };
+
+    const isEmpty = (value) =>
+      value === undefined || value === null || value === "";
+
+    const missingFields = Object.entries(requiredFields)
+      .filter(([_, value]) => isEmpty(value))
+      .map(([key]) => key);
+
+    if (missingFields.length > 0)
+      throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
+
+    const existingPharmacy = await pharmacyModel.findOne({
+      pharmacyNumber,
+    });
+
+    if (existingPharmacy)
+      throw new Error("Аптека с этим номером уже существует");
+
+    console.log("name:", name);
+    console.log("pharmacyNumber:", pharmacyNumber);
+    console.log("address:", address);
+    console.log("contact:", contact);
+    console.log("management:", management);
+    console.log("businessHours:", businessHours);
+
+    const newPharmacy = await pharmacyModel.create({
+      name,
+      pharmacyNumber,
+      address,
+      contact,
+      management,
+      businessHours,
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: newPharmacy,
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
 const getPharmacyBySellerId = async (req, res) => {
   const { id } = req.params;
   try {
@@ -1612,6 +1681,8 @@ export {
   getProductById,
   getAllPharmacies,
   getPharmacyById,
+  addPharmacy,
+  getAddPharmaciesData,
   getAllSellers,
   getSellerById,
   addSeller,

@@ -4,11 +4,11 @@ const { Schema } = mongoose;
 
 const addressSchema = new Schema(
   {
-    city: { type: String, required: true, trim: true },
-    street: { type: String, required: true, trim: true },
-    buildingNumber: { type: String, required: true, trim: true },
+    city: { type: String, trim: true },
+    street: { type: String, trim: true },
+    buildingNumber: { type: String, trim: true },
     province: { type: String, trim: true },
-    zipCode: { type: String, required: true, trim: true },
+    zipCode: { type: String, trim: true },
   },
   { _id: false },
 );
@@ -31,8 +31,8 @@ const contactSchema = new Schema(
 
 const managementSchema = new Schema(
   {
-    role: { type: String, required: true, trim: true },
-    name: { type: String, required: true, trim: true },
+    role: { type: String, trim: true },
+    name: { type: String, trim: true },
     roomNumber: { type: String, trim: true },
     phone: { type: String, trim: true },
     mobilePhone: { type: String, trim: true },
@@ -50,7 +50,6 @@ const businessHoursSchema = new Schema(
   {
     day: {
       type: String,
-      required: true,
       enum: [
         "Понедельник",
         "Вторник",

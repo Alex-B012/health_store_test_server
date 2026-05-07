@@ -7,6 +7,8 @@ import {
   getAllSellers,
   getAllPharmacies,
   getPharmacyById,
+  addPharmacy,
+  getAddPharmaciesData,
   addSeller,
   getAllPharmacies_addSeller,
   getAllManagers,
@@ -94,11 +96,25 @@ managerRouter.get(
   ...withAuth(["manager", "admin"]),
   getPharmacyById,
 );
+
+managerRouter.get(
+  "/add-pharmacies-data",
+  ...withAuth(["manager", "admin"]),
+  getAddPharmaciesData,
+);
+
+managerRouter.post(
+  "/add-pharmacy",
+  ...withAuth(["manager", "admin"]),
+  addPharmacy,
+);
+
 managerRouter.get(
   "/pharmacies-add-seller",
   ...withAuth(["manager", "admin"]),
   getAllPharmacies_addSeller,
 );
+
 managerRouter.get(
   "/managers",
   ...withAuth(["manager", "admin"]),
