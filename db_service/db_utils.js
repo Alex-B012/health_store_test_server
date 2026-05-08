@@ -3,7 +3,7 @@ import Counter from "../models/Counter.js";
 async function getNextSequence(name) {
   const result = await Counter.findOneAndUpdate(
     { _id: name },
-    { $inc: { seq: 7 } },
+    { $inc: { seq: 1 } },
     {
       upsert: true,
       returnDocument: "after",

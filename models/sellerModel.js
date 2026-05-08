@@ -22,7 +22,7 @@ const sellerSchema = new mongoose.Schema({
     trim: true,
     validate: {
       validator: function (v) {
-        return /^\+?\d{10,15}$/.test(v);
+        return /^\+?\d{5,20}$/.test(v);
       },
       message: "Введите корректный номер телефона без пробелов и дефисов",
     },

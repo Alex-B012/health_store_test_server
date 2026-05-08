@@ -20,6 +20,7 @@ import { warehouse_employees } from "../data/data.js";
 
 const COUNTERS = {
   PRODUCT_NAME: "productName",
+  SELLER_NAME: "seller",
 };
 
 // API to get dashboard data for manager view
@@ -384,38 +385,25 @@ const getAllProducts = async (req, res) => {
   console.log("getAllProducts - start");
 
   try {
-    const isSoldExpr = {
-      $and: [
-        { $eq: [{ $type: "$sale_entry.date" }, "date"] },
-        { $eq: [{ $type: "$sale_entry.seller_id" }, "objectId"] },
-      ],
-    };
-
     const [products, sellers, statsResult, categoryStats] = await Promise.all([
       productModel
         .find({
-          $expr: isSoldExpr,
+          "sale_entry.date": { $type: "date" },
+          "sale_entry.seller_id": { $ne: null },
         })
         .sort({ _id: -1 })
         .limit(100)
         .select("-__v")
         .populate({
-          path: "sale_entry.seller_id",
+          path: "seller",
           select: "name",
-          model: "seller",
         })
         .populate({
-          path: "name_id",
-          select: "name name_id",
-          model: "ProductName",
-          localField: "name_id",
-          foreignField: "name_id",
-          justOne: true,
+          path: "productName",
         })
+        .lean({ virtuals: true }),
 
-        .lean(),
-
-      sellerModel.find({}).select("_id name").lean(),
+      sellerModel.find({}).select("_id id name").lean(),
 
       productModel.aggregate([
         {
@@ -429,7 +417,7 @@ const getAllProducts = async (req, res) => {
                     $and: [
                       { $ne: [{ $type: "$sale_entry" }, "missing"] },
                       { $eq: [{ $type: "$sale_entry.date" }, "date"] },
-                      { $eq: [{ $type: "$sale_entry.seller_id" }, "objectId"] },
+                      { $ne: ["$sale_entry.seller_id", null] },
                     ],
                   },
                 },
@@ -443,7 +431,7 @@ const getAllProducts = async (req, res) => {
                   $expr: {
                     $and: [
                       { $eq: [{ $type: "$sale_entry.date" }, "date"] },
-                      { $eq: [{ $type: "$sale_entry.seller_id" }, "objectId"] },
+                      { $ne: ["$sale_entry.seller_id", null] },
                     ],
                   },
                 },
@@ -494,7 +482,7 @@ const getAllProducts = async (req, res) => {
                 {
                   $and: [
                     { $eq: [{ $type: "$sale_entry.date" }, "date"] },
-                    { $eq: [{ $type: "$sale_entry.seller_id" }, "objectId"] },
+                    { $ne: ["$sale_entry.seller_id", null] },
                   ],
                 },
                 1,
@@ -541,7 +529,7 @@ const getAllProducts = async (req, res) => {
         },
 
         {
-          $sort: { total: -1 },
+          $sort: { sold: -1 },
         },
       ]),
     ]);
@@ -579,6 +567,7 @@ const getAllProducts = async (req, res) => {
 
 // API to get product by id for manager view
 const getProductById = async (req, res) => {
+  console.log("getProductById - start");
   const { id } = req.params;
 
   try {
@@ -599,22 +588,19 @@ const getProductById = async (req, res) => {
         message: "Product name not found",
       });
 
-    const nameId = productName.name_id; // ✅ THIS is the correct key
+    const nameId = productName.name_id;
 
     const isSoldExpr = {
       $and: [
         { $eq: [{ $type: "$sale_entry.date" }, "date"] },
-        { $eq: [{ $type: "$sale_entry.seller_id" }, "objectId"] },
+        { $ne: ["$sale_entry.seller_id", null] },
       ],
     };
 
     const [stats, pharmacyStats, sellerStats] = await Promise.all([
-      // ======================
-      // PRODUCT STATS
-      // ======================
       productModel.aggregate([
         {
-          $match: { name_id: nameId }, // ✅ FIXED (Number, not ObjectId)
+          $match: { name_id: nameId },
         },
         {
           $project: {
@@ -638,13 +624,10 @@ const getProductById = async (req, res) => {
         },
       ]),
 
-      // ======================
-      // PHARMACY STATS
-      // ======================
       productModel.aggregate([
         {
           $match: {
-            name_id: nameId, // ✅ FIXED
+            name_id: nameId,
             pharmacy_id: { $ne: null },
           },
         },
@@ -690,40 +673,26 @@ const getProductById = async (req, res) => {
         },
       ]),
 
-      // ======================
-      // SELLER STATS
-      // ======================
       productModel.aggregate([
         {
           $match: {
-            name_id: nameId, // ✅ FIXED
+            name_id: nameId,
+            "sale_entry.date": { $type: "date" },
             "sale_entry.seller_id": { $ne: null },
           },
         },
-        {
-          $project: {
-            sale_entry: 1,
-            isSold: { $cond: [isSoldExpr, 1, 0] },
-          },
-        },
-        {
-          $addFields: {
-            seller_id_obj: {
-              $toObjectId: "$sale_entry.seller_id",
-            },
-          },
-        },
+
         {
           $group: {
-            _id: "$seller_id_obj",
-            totalSales: { $sum: "$isSold" },
+            _id: "$sale_entry.seller_id",
+            totalSales: { $sum: 1 },
           },
         },
         {
           $lookup: {
             from: "sellers",
             localField: "_id",
-            foreignField: "_id",
+            foreignField: "id",
             as: "seller",
           },
         },
@@ -1125,7 +1094,7 @@ const getPharmacyById = async (req, res) => {
     );
 
     const enrichedSellers = sellers.map((seller) => {
-      const sellerKey = seller._id?.toString();
+      const sellerKey = seller.id?.toString();
 
       return {
         ...seller,
@@ -1238,8 +1207,8 @@ const getAllSellers = async (req, res) => {
       productModel.aggregate([
         {
           $match: {
-            "sale_entry.seller_id": { $ne: null },
-            "sale_entry.date": { $ne: null },
+            "sale_entry.seller_id": { $type: "number" },
+            "sale_entry.date": { $type: "date" },
           },
         },
         {
@@ -1255,12 +1224,12 @@ const getAllSellers = async (req, res) => {
 
     counts.forEach((c) => {
       if (!c._id) return;
-      salesMap.set(c._id.toString(), c.totalSoldProducts);
+      salesMap.set(c._id, c.totalSoldProducts);
     });
 
     const sellersWithSales = sellers.map((seller) => ({
       ...seller,
-      totalSoldProducts: salesMap.get(seller._id.toString()) || 0,
+      totalSoldProducts: salesMap.get(seller.id) || 0,
     }));
 
     const totalSoldProducts = counts.reduce(
@@ -1285,7 +1254,10 @@ const getSellerById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const seller = await sellerModel.findById(id).select("-__v").lean();
+    const seller = await sellerModel
+      .findOne({ id: Number(id) })
+      .select("-__v")
+      .lean();
 
     if (!seller)
       return res.status(404).json({
@@ -1318,8 +1290,9 @@ const getSellerById = async (req, res) => {
               $cond: [
                 {
                   $and: [
-                    { $eq: ["$sale_entry.seller_id", sellerObjectId] },
                     { $ne: ["$sale_entry.date", null] },
+                    { $ne: ["$sale_entry.seller_id", null] },
+                    { $eq: ["$sale_entry.seller_id", seller.id] },
                   ],
                 },
                 1,
@@ -1356,8 +1329,9 @@ const getSellerById = async (req, res) => {
               $cond: [
                 {
                   $and: [
-                    { $eq: ["$sale_entry.seller_id", sellerObjectId] },
                     { $ne: ["$sale_entry.date", null] },
+                    { $ne: ["$sale_entry.seller_id", null] },
+                    { $eq: ["$sale_entry.seller_id", seller.id] },
                   ],
                 },
                 1,
@@ -1489,14 +1463,24 @@ const addSeller = async (req, res) => {
       }
     }
 
+    const parsedLocationId = Number(location_id);
+    if (Number.isNaN(parsedLocationId)) {
+      return res.status(400).json({ message: "Invalid location_id" });
+    }
+
+    const seller_id = await getNextSequence(COUNTERS.SELLER_NAME);
+
     const seller = await sellerModel.create({
+      id: Number(seller_id),
       name,
       dob: dob || null,
       employmentPeriod,
-      location_id: Number(location_id),
+      location_id: location_id ? Number(location_id) : null,
       telegram_id: parsedTelegramId,
       phone: normalizedPhone || null,
     });
+
+    console.log("normalizedPhone:", normalizedPhone);
 
     return res.status(201).json({
       success: true,

@@ -10,7 +10,7 @@ const managerSchema = new mongoose.Schema({
     type: Date,
   },
   employmentPeriod: {
-    status: { type: String, enum: ["active", "inactive"], default: "active" },
+    status: { type: String, enum: ["active", "non-active"], default: "active" },
     startDate: { type: Date },
     endDate: { type: Date },
   },
