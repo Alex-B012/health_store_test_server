@@ -65,7 +65,7 @@ const getDashboardData = async (req, res) => {
                 $lookup: {
                   from: "sellers",
                   localField: "_id",
-                  foreignField: "_id",
+                  foreignField: "id",
                   as: "seller",
                 },
               },
@@ -77,7 +77,7 @@ const getDashboardData = async (req, res) => {
               },
               {
                 $project: {
-                  _id: 1,
+                  sellerId: "$_id",
                   salesCount: 1,
                   name: {
                     $ifNull: ["$seller.name", "Unknown Seller"],

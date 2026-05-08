@@ -64,7 +64,7 @@ const PRODUCTS = [
     pharmacy_id: 9,
   },
   {
-    name: "Product test 05 R",
+    name: "Product test 07 R",
     name_id: 5,
     stock_entry: {
       qr_code:
@@ -75,7 +75,7 @@ const PRODUCTS = [
     pharmacy_id: 10,
   },
   {
-    name: "Product test 06 R",
+    name: "Product test 08 R",
     name_id: 5,
     stock_entry: {
       qr_code: "\x1D0104602014010561215j2>>>\x1D93oY/z",
@@ -83,6 +83,26 @@ const PRODUCTS = [
       employee_id: 2005,
     },
     pharmacy_id: 13,
+  },
+  {
+    name: "Product test 09",
+    name_id: 5,
+    stock_entry: {
+      qr_code: "\x1D0104600494602191215OkyPmf'zrBD?\x1D93jStG",
+      date: "2026-05-08T08:21:15.713+00:00",
+      employee_id: 2005,
+    },
+    pharmacy_id: 9,
+  },
+  {
+    name: "Product test 10",
+    name_id: 5,
+    stock_entry: {
+      qr_code: "\x1D0104600721024895215qO-dET\x1D93tOxL",
+      date: "2026-05-08T13:13:19.713+00:00",
+      employee_id: 2005,
+    },
+    pharmacy_id: 9,
   },
 ];
 

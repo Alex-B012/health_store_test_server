@@ -35,6 +35,7 @@ const scanProduct = async (req, res) => {
     });
 
     console.log("product:", product);
+    console.log("telegramUser:", telegramUser);
 
     if (!product) {
       await issueLogModel.create({
@@ -65,9 +66,11 @@ const scanProduct = async (req, res) => {
 
     const seller = await sellerModel
       .findOne({
-        telegram_id: telegramUser.id,
+        telegram_id: Number(telegramUser.id),
       })
       .select(EXCLUDED_DATA_V);
+
+    console.log("seller:", seller);
 
     if (seller.location_id !== product.pharmacy_id) {
       await issueLogModel.create({
@@ -85,7 +88,7 @@ const scanProduct = async (req, res) => {
 
     const saleEntry = {
       date: scannerData.date ? new Date(scannerData.date) : new Date(),
-      seller_id: seller._id,
+      seller_id: seller.id,
     };
 
     product.sale_entry = saleEntry;

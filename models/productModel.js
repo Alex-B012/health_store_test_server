@@ -13,10 +13,7 @@ const productSchema = new mongoose.Schema({
   pharmacy_id: { type: Number },
   sale_entry: {
     date: { type: Date },
-    seller_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "seller",
-    },
+    seller_id: { type: Number },
   },
 });
 
