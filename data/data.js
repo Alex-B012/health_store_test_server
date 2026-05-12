@@ -301,7 +301,11 @@ const SELLERS = [
 
 const MANAGERS = [
   {
-    name: { name: "Александр", patronymic: "Викторович", lastName: "Орлов" },
+    name: {
+      firstName: "Александр",
+      patronymic: "Викторович",
+      lastName: "Орлов",
+    },
     dob: new Date("1980-06-14"),
     employmentPeriod: {
       status: "active",
@@ -310,9 +314,10 @@ const MANAGERS = [
     },
     location_id: 1,
     telegram_id: 91827364,
+    phone: "+79163458271",
   },
   {
-    name: { name: "Максим", patronymic: "Андреевич", lastName: "Федоров" },
+    name: { firstName: "Максим", patronymic: "Андреевич", lastName: "Федоров" },
     dob: new Date("1991-11-22"),
     employmentPeriod: {
       status: "active",
@@ -321,9 +326,10 @@ const MANAGERS = [
     },
     location_id: 1,
     telegram_id: 82736455,
+    phone: "+79214587634",
   },
   {
-    name: { name: "Ольга", patronymic: "Сергеевна", lastName: "Морозова" },
+    name: { firstName: "Ольга", patronymic: "Сергеевна", lastName: "Морозова" },
     dob: new Date("1987-03-08"),
     employmentPeriod: {
       status: "active",
@@ -332,9 +338,14 @@ const MANAGERS = [
     },
     location_id: 1,
     telegram_id: 73645582,
+    phone: "+79031247856",
   },
   {
-    name: { name: "Наталья", patronymic: "Дмитриевна", lastName: "Васильева" },
+    name: {
+      firstName: "Наталья",
+      patronymic: "Дмитриевна",
+      lastName: "Васильева",
+    },
     dob: new Date("1993-07-19"),
     employmentPeriod: {
       status: "active",
@@ -343,9 +354,10 @@ const MANAGERS = [
     },
     location_id: 1,
     telegram_id: 64558291,
+    phone: "+79852364190",
   },
   {
-    name: { name: "Елена", patronymic: "Павловна", lastName: "Новикова" },
+    name: { firstName: "Елена", patronymic: "Павловна", lastName: "Новикова" },
     dob: new Date("1985-12-02"),
     employmentPeriod: {
       status: "active",
@@ -354,6 +366,7 @@ const MANAGERS = [
     },
     location_id: 1,
     telegram_id: 55482917,
+    phone: "+79316745028",
   },
 ];
 

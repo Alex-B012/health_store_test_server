@@ -3,7 +3,6 @@ const getRole = (req, res) => {
 
   const { permission_role } = req || {};
   try {
-    console.log("Role:", permission_role);
     let role = "";
     if (permission_role === "admin" || permission_role === "manager")
       role = permission_role;

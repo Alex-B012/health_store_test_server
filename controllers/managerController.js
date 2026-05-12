@@ -1227,10 +1227,12 @@ const getAllSellers = async (req, res) => {
       salesMap.set(c._id, c.totalSoldProducts);
     });
 
-    const sellersWithSales = sellers.map((seller) => ({
-      ...seller,
-      totalSoldProducts: salesMap.get(seller.id) || 0,
-    }));
+    const sellersWithSales = sellers
+      .map((seller) => ({
+        ...seller,
+        totalSoldProducts: salesMap.get(seller.id) || 0,
+      }))
+      .sort((a, b) => b.totalSoldProducts - a.totalSoldProducts);
 
     const totalSoldProducts = counts.reduce(
       (sum, c) => sum + (c.totalSoldProducts || 0),
@@ -1502,21 +1504,17 @@ const deleteSeller = (req, res) => {
 
 const getAllManagers = async (req, res) => {
   console.log("getAllManagers - start");
+
   const { permission_role } = req || {};
   try {
-    const managers = await managerModel
-      .find({})
-      .select("-__v -telegram_id")
-      .lean();
+    const managers = await managerModel.find({}).select("-__v").lean();
 
     const sortedManagers = [...managers].sort((a, b) => {
-      const nameA = a.name.surname + a.name.name + a.name.patronymic;
-      const nameB = b.name.surname + b.name.name + b.name.patronymic;
+      const nameA = a.name.firstName + a.name.lastName + a.name.patronymic;
+      const nameB = b.name.firstName + b.name.lastName + b.name.patronymic;
       return nameA.localeCompare(nameB, "ru");
     });
 
-    console.log("Role:", permission_role);
-    // console.log("req:", req);
     let role = "";
     if (permission_role === "admin" || permission_role === "manager")
       role = permission_role;
@@ -1551,14 +1549,16 @@ const addManager = async (req, res) => {
   console.log("addManager - start");
 
   try {
-    const { name, dob, employmentPeriod, location_id, telegram_id } = req.body;
+    const { name, dob, employmentPeriod, location_id, telegram_id, phone } =
+      req.body;
 
     if (
-      !name?.name ||
-      !name?.surname ||
+      !name?.firstName ||
+      !name?.lastName ||
       telegram_id === undefined ||
       telegram_id === null ||
-      telegram_id === ""
+      telegram_id === "" ||
+      phone === ""
     )
       return res.status(400).json({
         success: false,
@@ -1589,6 +1589,7 @@ const addManager = async (req, res) => {
       employmentPeriod,
       location_id: location_id ? Number(location_id) : null,
       telegram_id: Number(telegram_id),
+      phone: phone ? phone.replace(/\s+/g, "").trim() : null,
     });
 
     res.status(201).json({ success: true, manager });

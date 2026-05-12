@@ -2,9 +2,9 @@ import mongoose from "mongoose";
 
 const managerSchema = new mongoose.Schema({
   name: {
-    name: { type: String, required: [true, "First name is required"] },
+    firstName: { type: String, required: [true, "First name is required"] },
     patronymic: { type: String, required: false },
-    surname: { type: String, required: [true, "Surname is required"] },
+    lastName: { type: String, required: [true, "Surname is required"] },
   },
   dob: {
     type: Date,
@@ -16,6 +16,17 @@ const managerSchema = new mongoose.Schema({
   },
   location_id: { type: Number },
   telegram_id: { type: Number, required: true },
+  phone: {
+    type: String,
+    trim: true,
+    validate: {
+      validator: function (v) {
+        if (!v) return true;
+        return /^\+?\d{5,20}$/.test(v);
+      },
+      message: "Введите корректный номер телефона без пробелов и дефисов",
+    },
+  },
 });
 
 managerSchema.index({ telegram_id: 1 }, { unique: true });

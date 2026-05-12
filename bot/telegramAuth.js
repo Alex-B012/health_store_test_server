@@ -43,7 +43,7 @@ function telegramAuth() {
 
   return async (req, res, next) => {
     const initData = req.headers.authorization;
-    console.log("initData:", initData);
+    // console.log("initData:", initData);
 
     if (!initData)
       return res.status(401).json({ error: "Missing Authorization header" });
@@ -54,13 +54,9 @@ function telegramAuth() {
 
     const telegram_id = String(verified.user.id);
 
-    console.log("telegramId:", telegram_id);
-
     const role_seller = await sellerModel.findOne({ telegram_id });
     const role_admin = await adminModel.findOne({ admin_id: telegram_id });
     let role_manager = null;
-
-    console.log("Roles:", role_seller, role_admin);
 
     if (!role_seller && !role_admin)
       role_manager = await managerModel.findOne({ telegram_id });
@@ -69,13 +65,15 @@ function telegramAuth() {
       return res.status(403).json({ error: "No permissions assigned" });
 
     req.telegramUser = verified.user;
-    console.log("req.telegramUser:", req.telegramUser);
-    console.log("verified.user:", verified.user);
+    // console.log("req.telegramUser:", req.telegramUser);
+    // console.log("verified.user:", verified.user);
     req.permission_role = role_admin
       ? "admin"
       : role_seller
         ? "seller"
         : "manager";
+
+    console.log("telegramId:", telegram_id);
 
     next();
   };
