@@ -1,3 +1,22 @@
+const getRole = (req, res) => {
+  console.log("getRole - start");
+
+  const { permission_role } = req || {};
+  try {
+    console.log("Role:", permission_role);
+    let role = "";
+    if (permission_role === "admin" || permission_role === "manager")
+      role = permission_role;
+
+    res.json({
+      success: true,
+      role: role,
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
 const getAllProducts = (req, res) => {
   res.json({ success: true, products: [] });
 };
@@ -88,6 +107,7 @@ const deleteRole = (req, res) => {
 };
 
 export {
+  getRole,
   getAllProducts,
   getProductById,
   updateProduct,

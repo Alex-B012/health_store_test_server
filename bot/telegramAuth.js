@@ -60,6 +60,8 @@ function telegramAuth() {
     const role_admin = await adminModel.findOne({ admin_id: telegram_id });
     let role_manager = null;
 
+    console.log("Roles:", role_seller, role_admin);
+
     if (!role_seller && !role_admin)
       role_manager = await managerModel.findOne({ telegram_id });
 

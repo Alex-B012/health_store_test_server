@@ -1502,6 +1502,7 @@ const deleteSeller = (req, res) => {
 
 const getAllManagers = async (req, res) => {
   console.log("getAllManagers - start");
+  const { permission_role } = req || {};
   try {
     const managers = await managerModel
       .find({})
@@ -1514,8 +1515,18 @@ const getAllManagers = async (req, res) => {
       return nameA.localeCompare(nameB, "ru");
     });
 
+    console.log("Role:", permission_role);
+    // console.log("req:", req);
+    let role = "";
+    if (permission_role === "admin" || permission_role === "manager")
+      role = permission_role;
+
     console.log(`getAllManagers - managers found: ${sortedManagers.length}`);
-    res.json({ success: true, managers: sortedManagers });
+    res.json({
+      success: true,
+      managers: sortedManagers,
+      role: role,
+    });
   } catch (error) {
     handleServerError(res, error);
   }
