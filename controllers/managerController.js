@@ -21,6 +21,7 @@ import { warehouse_employees } from "../data/data.js";
 const COUNTERS = {
   PRODUCT_NAME: "productName",
   SELLER_NAME: "seller",
+  MANAGER_NAME: "manager",
 };
 
 // API to get dashboard data for manager view
@@ -1423,13 +1424,7 @@ const addSeller = async (req, res) => {
   const { name, dob, employmentPeriod, location_id, telegram_id, phone } =
     req.body;
 
-  if (
-    !telegram_id ||
-    !name?.firstName ||
-    !name?.lastName ||
-    !employmentPeriod?.startDate ||
-    !location_id
-  ) {
+  if (!telegram_id || !name?.firstName || !name?.lastName || !location_id) {
     return res.status(400).json({
       success: false,
       message: "Заполните все обязательные поля!",
@@ -1466,9 +1461,8 @@ const addSeller = async (req, res) => {
     }
 
     const parsedLocationId = Number(location_id);
-    if (Number.isNaN(parsedLocationId)) {
+    if (Number.isNaN(parsedLocationId))
       return res.status(400).json({ message: "Invalid location_id" });
-    }
 
     const seller_id = await getNextSequence(COUNTERS.SELLER_NAME);
 
@@ -1482,7 +1476,7 @@ const addSeller = async (req, res) => {
       phone: normalizedPhone || null,
     });
 
-    console.log("normalizedPhone:", normalizedPhone);
+    // console.log("normalizedPhone:", normalizedPhone);
 
     return res.status(201).json({
       success: true,
@@ -1493,9 +1487,88 @@ const addSeller = async (req, res) => {
   }
 };
 
-const updateSeller = (req, res) => {
+const getEditSellerDataById = async (req, res) => {
+  console.log("getEditSellerDataById - start");
+
   const { id } = req.params;
-  const { name, telegram_user_id } = req.body;
+  try {
+    const seller = await sellerModel
+      .findOne({ id: Number(id) })
+      .select("-__v -employmentPeriod")
+      .lean();
+
+    if (!seller)
+      return res.status(404).json({
+        success: false,
+        message: "Seller not found",
+      });
+
+    const pharmacies = await pharmacyModel
+      .find({})
+      .select("pharmacyNumber name -_id")
+      .sort({ pharmacyNumber: 1 })
+      .lean();
+
+    return res.status(201).json({
+      success: true,
+      seller,
+      pharmacies,
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
+const updateSeller = async (req, res) => {
+  console.log("updateSeller - start");
+  try {
+    const { id } = req.params;
+    const { name, dob, location_id, telegram_id, phone } = req.body;
+
+    if (
+      !telegram_id ||
+      !name?.firstName ||
+      !name?.lastName ||
+      !location_id ||
+      !phone
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Заполните все обязательные поля!",
+      });
+    }
+
+    const updatedSeller = await sellerModel
+      .findOneAndUpdate(
+        { id: Number(id) },
+        {
+          telegram_id,
+          phone,
+          name,
+          dob,
+          location_id,
+        },
+        {
+          new: true,
+        },
+      )
+      .select("-__v")
+      .lean();
+
+    if (!updatedSeller) {
+      return res.status(404).json({
+        success: false,
+        message: "Seller not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      seller: updatedSeller,
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
 };
 
 const deleteSeller = (req, res) => {
@@ -1565,10 +1638,10 @@ const addManager = async (req, res) => {
         message: "Заполните все обязательные поля!",
       });
 
-    if (!/^\d{8}$/.test(String(telegram_id))) {
+    if (!/^\d{9}$/.test(String(telegram_id))) {
       return res.status(400).json({
         success: false,
-        message: "Telegram ID должен содержать 8 цифр",
+        message: "Telegram ID должен содержать 9 цифр",
       });
     }
 
@@ -1583,13 +1656,29 @@ const addManager = async (req, res) => {
       });
     }
 
+    const normalizedPhone = phone ? phone.replace(/\s+/g, "").trim() : null;
+
+    if (normalizedPhone) {
+      const existingPhone = await sellerModel.findOne({
+        phone: normalizedPhone,
+      });
+
+      if (existingPhone) {
+        return res.status(400).json({
+          success: false,
+          message: "Телефон уже существует",
+        });
+      }
+    }
+
     const manager = await managerModel.create({
+      id: await getNextSequence(COUNTERS.MANAGER_NAME),
       name,
       dob: dob || null,
       employmentPeriod,
       location_id: location_id ? Number(location_id) : null,
       telegram_id: Number(telegram_id),
-      phone: phone ? phone.replace(/\s+/g, "").trim() : null,
+      phone: normalizedPhone || null,
     });
 
     res.status(201).json({ success: true, manager });
@@ -1736,6 +1825,7 @@ export {
   getAllSellers,
   getSellerById,
   addSeller,
+  getEditSellerDataById,
   updateSeller,
   deleteSeller,
   getAllPharmacies_addSeller,

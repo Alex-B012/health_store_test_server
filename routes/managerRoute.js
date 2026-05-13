@@ -10,6 +10,8 @@ import {
   addPharmacy,
   getAddPharmaciesData,
   addSeller,
+  getEditSellerDataById,
+  updateSeller,
   getAllPharmacies_addSeller,
   getAllManagers,
   getAddManagerData,
@@ -88,6 +90,15 @@ managerRouter.get(
   getSellerById,
 );
 managerRouter.post("/seller", ...withAuth(["manager", "admin"]), addSeller);
+
+managerRouter.get(
+  "/edit-seller/:id",
+  ...withAuth(["admin"]),
+  getEditSellerDataById,
+);
+
+managerRouter.put("/seller/:id", ...withAuth(["admin"]), updateSeller);
+
 managerRouter.get(
   "/pharmacies",
   ...withAuth(["manager", "admin"]),

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const managerSchema = new mongoose.Schema({
+  id: { type: Number, required: true },
   name: {
     firstName: { type: String, required: [true, "First name is required"] },
     patronymic: { type: String, required: false },
@@ -29,6 +30,7 @@ const managerSchema = new mongoose.Schema({
   },
 });
 
+managerSchema.index({ id: 1 }, { unique: true });
 managerSchema.index({ telegram_id: 1 }, { unique: true });
 
 const managerModel =
