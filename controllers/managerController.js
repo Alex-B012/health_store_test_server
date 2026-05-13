@@ -1687,6 +1687,76 @@ const addManager = async (req, res) => {
   }
 };
 
+const getEditManagerDataById = async (req, res) => {
+  console.log("getEditManagerDataById - start");
+  const { id } = req.params;
+  try {
+    const manager = await managerModel
+      .findOne({ id: Number(id) })
+      .select("-__v -employmentPeriod")
+      .lean();
+
+    if (!manager) {
+      return res.status(404).json({
+        success: false,
+        message: "Manager not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      manager,
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
+const updateManager = async (req, res) => {
+  console.log("updateManager - start");
+  try {
+    const { id } = req.params;
+    const { name, dob, telegram_id, phone } = req.body;
+
+    if (!telegram_id || !name?.firstName || !name?.lastName || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Заполните все обязательные поля!",
+      });
+    }
+
+    const updatedManager = await managerModel
+      .findOneAndUpdate(
+        { id: Number(id) },
+        {
+          telegram_id,
+          phone,
+          name,
+          dob,
+        },
+        {
+          new: true,
+        },
+      )
+      .select("-__v")
+      .lean();
+
+    if (!updatedManager) {
+      return res.status(404).json({
+        success: false,
+        message: "Manager not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      manager: updatedManager,
+    });
+  } catch (error) {
+    handleServerError(res, error);
+  }
+};
+
 const getAllAdmins = async (req, res) => {
   console.log("getAllAdmins - start");
   try {
@@ -1832,6 +1902,8 @@ export {
   getAllManagers,
   getAddManagerData,
   addManager,
+  getEditManagerDataById,
+  updateManager,
   getAllAdmins,
   getProductsAddData,
   getProductCategoriesAddData,

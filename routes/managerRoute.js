@@ -16,6 +16,8 @@ import {
   getAllManagers,
   getAddManagerData,
   addManager,
+  getEditManagerDataById,
+  updateManager,
   getAllAdmins,
   getProductsAddData,
   getProductCategoriesAddData,
@@ -104,6 +106,7 @@ managerRouter.get(
   ...withAuth(["manager", "admin"]),
   getAllPharmacies,
 );
+
 managerRouter.get(
   "/pharmacies/:id",
   ...withAuth(["manager", "admin"]),
@@ -141,6 +144,14 @@ managerRouter.get(
 );
 
 managerRouter.post("/manager", ...withAuth(["admin"]), addManager);
+
+managerRouter.get(
+  "/edit-manager/:id",
+  ...withAuth(["admin"]),
+  getEditManagerDataById,
+);
+
+managerRouter.put("/manager/:id", ...withAuth(["admin"]), updateManager);
 
 managerRouter.get("/admins", ...withAuth(["manager", "admin"]), getAllAdmins);
 managerRouter.get(
